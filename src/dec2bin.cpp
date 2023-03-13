@@ -1,4 +1,4 @@
-#include "builtin_funcs.h"
+#include "builtin_funcs.hpp"
 string dec2bin(unsigned int n)
 {
     string val="";

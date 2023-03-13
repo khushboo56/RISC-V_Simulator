@@ -14,7 +14,7 @@ Date:
    Purpose of this file: implementation file for myRISCVSim
 */
 #include "builtin_funcs.hpp"
-#include "self_defined_funcs.hpp"
+#include"self_defined_funcs.hpp"
 #include "myRISCVSim.hpp"
 #ifndef MYCLASSES
 #define MYCLASSES
@@ -22,7 +22,7 @@ Date:
 #include "control_unit.hpp"
 #endif
 #include "global_variables.hpp"
-
+using namespace std;
 
 void fetch();
 void decode();
@@ -31,11 +31,14 @@ void write_back();
 
 void run_riscvsim() {
     EXIT=false;
+    int i;
     while(1) {
+        // cout<<"PC :"<<PC<<endl;
         fetch();
         decode();
         if(EXIT){
             EXIT=false;
+            registerFile.print_registers();
             printf("ORIGINAL\n");
             unsigned int addr=0x10001000;
             for(int i=0;i<10;i++){
@@ -53,6 +56,10 @@ void run_riscvsim() {
         execute();
         mA();
         write_back();
+        // break;
+        // registerFile.print_registers();
+        // cout<<"enter some number"<<endl;
+        // cin>>i;
     }
 }
 
