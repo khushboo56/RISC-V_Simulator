@@ -13,6 +13,7 @@ Control_unit::Control_unit(){
     isSt=false;
     isWb=false;
     wbSignal="alu";
+    isauipc=false;
     nBytes=0;
     isexit=false;
 }
@@ -21,19 +22,27 @@ void Control_unit::set_instruction(string instruct){
 }
 void Control_unit::build_control(){
     string opcode=instruction.substr(25,7);
-    //value of isImmediate
+    
     if(opcode=="1111111"){
         isexit=true;
     }
     else{
         isexit=false;
-        if(opcode=="0010011"||opcode=="0000011"||opcode=="0100011"||opcode=="1100111"||opcode=="0110111"){
-            isImmediate=true; //one for arithmetic immediate, load, store, jalr, lui,
+        //value of isImmediate
+        if(opcode=="0010011"||opcode=="0000011"||opcode=="0100011"||opcode=="1100111"||opcode=="0110111"||opcode=="0010111"){
+            isImmediate=true; //one for arithmetic immediate, load, store, jalr, lui, auipc
         }
         else{
             isImmediate=false;
         }
 
+        //isauipc
+        if(opcode=="0010111"){
+            isauipc=true;
+        }
+        else{
+            isauipc=false;
+        }
         //value for branchSelect
         //jalr branch select is 1;
         if(opcode=="1100111"){
@@ -181,7 +190,7 @@ void Control_unit::build_control(){
         }
 
         //value of wbSignal
-        if(opcode=="0110011"||opcode=="0010011"||opcode=="0110111"){
+        if(opcode=="0110011"||opcode=="0010011"||opcode=="0110111"||opcode=="0010111"){
             wbSignal="alu";
         }
         else if(opcode=="0000011"){

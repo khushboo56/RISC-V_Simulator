@@ -12,6 +12,7 @@ class Control_unit{
     bool isSt;
     bool isWb;
     int nBytes;
+    bool isauipc;
     string wbSignal;
     Control_unit();
     void set_instruction(string instruct);
