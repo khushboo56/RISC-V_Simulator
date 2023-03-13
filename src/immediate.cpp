@@ -1,4 +1,4 @@
-#include "builtin_funcs.h"
+#include "builtin_funcs.hpp"
 long long int bin2dec(string str);
 long long int unsgn_binaryToDecimal(string n);
 long long int sign_extn(string bin)
