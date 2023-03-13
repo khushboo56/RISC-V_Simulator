@@ -14,9 +14,13 @@
  5. Write back: It will make the necessary changes in the register file, PC and call for next instruction as PC will be updated after this step.
 
  Team members:
+ 
  Chavda jayrajsinh : 2021CSB1078
+
  Khushboo gupta : 2021CSB1105
+
  Nikhil garg : 2021CSB1114
+
  Priyanshu kumar : 2021CSB1125
 
  Phase-II  Pipelined Execution.
