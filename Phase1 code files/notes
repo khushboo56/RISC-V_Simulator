@@ -1,0 +1,9 @@
+jayraj{
+    ingnored auipc
+    not sure how jalr will work
+    zero extension not taken in account
+    branchPC contains absolute value of PC and NOT offset
+}
+have to work on gui , a script file to run every program , auipc , print statements , documentations 
+and have to commit it in real repository..
+
