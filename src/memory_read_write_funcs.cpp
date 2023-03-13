@@ -1,5 +1,5 @@
-#include "builtin_funcs.h"
-#include "global_variables.h"
+#include "builtin_funcs.hpp"
+#include "global_variables.hpp"
 void memory_write(unsigned int address, unsigned long long int value, int bytes)
 {
     for (int i = 0; i < bytes; i++)

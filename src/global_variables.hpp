@@ -1,9 +1,9 @@
-#include"builtin_funcs.h"
-#include"self_defined_funcs_and_classes.h"
+#include"builtin_funcs.hpp"
+#include"self_defined_funcs.hpp"
 #ifndef MYCLASSES
 #define MYCLASSES
-#include "RegisterFile.h"
-#include "Control_unit.h"
+#include "registerfile.hpp"
+#include "control_unit.hpp"
 #endif
 extern unsigned int PC;
 extern unsigned int nextPC;
