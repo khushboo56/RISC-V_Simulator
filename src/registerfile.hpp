@@ -1,4 +1,4 @@
-#include "builtin_funcs.h"
+#include "builtin_funcs.hpp"
 class RegisterFile {
     vector<int> x;
 public:

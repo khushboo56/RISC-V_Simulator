@@ -16,14 +16,14 @@ Date:
 */
 
 
-#include "builtin_funcs.h"
+#include "builtin_funcs.hpp"
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "myRISCVSim.h"
+#include "myRISCVSim.hpp"
 #ifndef GLOBAL
 #define GLOBAL
-#include "global_variables.h"
+#include "global_variables.hpp"
 #endif
 int main(int argc, char** argv) {
   char* prog_mem_file; 
