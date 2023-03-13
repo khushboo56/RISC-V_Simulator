@@ -16,6 +16,13 @@ Date:
 #include "builtin_funcs.hpp"
 #include "self_defined_funcs.hpp"
 #include "myRISCVSim.hpp"
+#ifndef MYCLASSES
+#define MYCLASSES
+#include "registerfile.hpp"
+#include "control_unit.hpp"
+#endif
+#include "global_variables.hpp"
+
 
 void fetch();
 void decode();
@@ -68,6 +75,43 @@ void fetch() {
 
 // //reads the instruction register, reads operand1, operand2 fromo register file, decides the operation to be performed in execute stage
 void decode(){
+        //setting the controls
+    mycontrol_unit.set_instruction(if_de_rest.instruction);
+    mycontrol_unit.build_control();
+    if(mycontrol_unit.isexit){
+        EXIT=true;
+        return;
+    }
+
+    // getting destination register
+    string rds=if_de_rest.instruction.substr(20,5);
+    cout<<if_de_rest.instruction<<" ##"<<endl;//
+    cout<<rds<<"**$**"<<endl;//
+    int rd=(int)unsgn_binaryToDecimal(rds);
+    // getting source register 1
+    string rs1s=if_de_rest.instruction.substr(12,5);
+    int rs1=unsgn_binaryToDecimal(rs1s);
+    //getting source register 2
+    string rs2s=if_de_rest.instruction.substr(7,5);
+    int rs2=unsgn_binaryToDecimal(rs2s);
+    int imm=immediate(if_de_rest.instruction);
+
+    de_ex_rest.rd=rd;
+    de_ex_rest.A=registerFile.get_register(rs1);
+    de_ex_rest.op2=registerFile.get_register(rs2);
+    de_ex_rest.branch_target=imm;
+
+    if(mycontrol_unit.isImmediate){
+        de_ex_rest.B=imm;
+    }
+    else{
+        de_ex_rest.B=registerFile.get_register(rs2);
+    }
+    // printf("branch target :%d\n",de_ex_rest.branch_target);//
+    // printf("A :%d\n",de_ex_rest.A);//
+    // printf("B :%d\n",de_ex_rest.B);//
+    // printf("op2 :%d\n",de_ex_rest.op2);//
+    // printf("rd :%d\n",de_ex_rest.rd); //
 
 }
 
