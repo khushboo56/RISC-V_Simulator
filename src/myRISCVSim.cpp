@@ -16,6 +16,13 @@ Date:
 #include "builtin_funcs.hpp"
 #include "self_defined_funcs.hpp"
 #include "myRISCVSim.hpp"
+#ifndef MYCLASSES
+#define MYCLASSES
+#include "registerfile.hpp"
+#include "control_unit.hpp"
+#endif
+#include "global_variables.hpp"
+
 
 void fetch();
 void decode();
@@ -51,8 +58,43 @@ void run_riscvsim() {
 
 // it is used to set the reset values
 //reset all registers and memory content to 0
-void reset_proc() {
+void reset_proc()
+{
+    // set PC to zero
+    PC = 0;
+    nextPC = 0;
+    branchPC = 0;
+    EXIT = false;
+    mem.clear();
+    for (int i = 0; i < 32; i++)
+    {
+        registerFile.set_register(i, 0);
+        if (i == 2)
+        {
+            // x[i] = 0x7FFFFFF0; // sp
+            registerFile.set_register(i, strtol("0x7FFFFFF0", NULL, 16)); // sp
+        }
+        else if (i == 3)
+        {
+            // x[i] = 0x10000000; // gp
+            registerFile.set_register(i, strtol("0x10000000", NULL, 16)); // gp
+        }
+    }
+    if_de_rest.instruction = "";
 
+    de_ex_rest.A = 0;
+    de_ex_rest.B = 0;
+    de_ex_rest.branch_target = 0;
+    de_ex_rest.op2 = 0;
+    de_ex_rest.rd = 0;
+
+    ex_ma_rest.alu_result = 0;
+    ex_ma_rest.op2 = 0;
+    ex_ma_rest.rd = 0;
+
+    ma_wb_rest.alu_result = 0;
+    ma_wb_rest.ld_result = 0;
+    ma_wb_rest.rd = 0;
 }
 
 //load_program_memory reads the input memory, and pupulates the instruction 
@@ -82,6 +124,43 @@ void fetch()
 }
 // //reads the instruction register, reads operand1, operand2 fromo register file, decides the operation to be performed in execute stage
 void decode(){
+        //setting the controls
+    mycontrol_unit.set_instruction(if_de_rest.instruction);
+    mycontrol_unit.build_control();
+    if(mycontrol_unit.isexit){
+        EXIT=true;
+        return;
+    }
+
+    // getting destination register
+    string rds=if_de_rest.instruction.substr(20,5);
+    cout<<if_de_rest.instruction<<" ##"<<endl;//
+    cout<<rds<<"**$**"<<endl;//
+    int rd=(int)unsgn_binaryToDecimal(rds);
+    // getting source register 1
+    string rs1s=if_de_rest.instruction.substr(12,5);
+    int rs1=unsgn_binaryToDecimal(rs1s);
+    //getting source register 2
+    string rs2s=if_de_rest.instruction.substr(7,5);
+    int rs2=unsgn_binaryToDecimal(rs2s);
+    int imm=immediate(if_de_rest.instruction);
+
+    de_ex_rest.rd=rd;
+    de_ex_rest.A=registerFile.get_register(rs1);
+    de_ex_rest.op2=registerFile.get_register(rs2);
+    de_ex_rest.branch_target=imm;
+
+    if(mycontrol_unit.isImmediate){
+        de_ex_rest.B=imm;
+    }
+    else{
+        de_ex_rest.B=registerFile.get_register(rs2);
+    }
+    // printf("branch target :%d\n",de_ex_rest.branch_target);//
+    // printf("A :%d\n",de_ex_rest.A);//
+    // printf("B :%d\n",de_ex_rest.B);//
+    // printf("op2 :%d\n",de_ex_rest.op2);//
+    // printf("rd :%d\n",de_ex_rest.rd); //
 
 }
 
@@ -199,6 +278,28 @@ void mA() {
 }
 
 // //writes the results back to register file
-void write_back() {
-
+void write_back()
+{
+    if (mycontrol_unit.isWb)
+    {
+        unsigned int wb_result = 0;
+        if (mycontrol_unit.wbSignal == "alu")
+        {
+            wb_result = ma_wb_rest.alu_result;
+        }
+        else if (mycontrol_unit.wbSignal == "ld")
+        {
+            wb_result = ma_wb_rest.ld_result;
+        }
+        else if (mycontrol_unit.wbSignal == "pc+4")
+        {
+            wb_result = PC + 4;
+        }
+        else
+        {
+            cout << "error :undefined wbSignal" << endl;
+        }
+        registerFile.set_register(ma_wb_rest.rd, wb_result);
+        cout << "rd: " << ma_wb_rest.rd << "\nvalue: " << wb_result << endl;
+    }
 }
