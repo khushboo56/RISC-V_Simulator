@@ -1,6 +1,6 @@
-#include "builtin_funcs.h"
-#include"self_defined_funcs_and_classes.h"
-#include "RegisterFile.h"
+#include "builtin_funcs.hpp"
+#include"self_defined_funcs.hpp"
+#include "registerfile.hpp"
 RegisterFile::RegisterFile() {
     for (int i = 0; i < 32; i++) {
         x.push_back(0);
