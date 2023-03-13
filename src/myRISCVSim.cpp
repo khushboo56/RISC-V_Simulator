@@ -69,10 +69,24 @@ void load_program_memory(char *file_name) {
 }
 
 // //reads from the instruction memory and updates the instruction register
-void fetch() {
-
+void fetch()
+{
+    if (mycontrol_unit.isBranchTaken)
+    {
+        PC = branchPC;
+    }
+    else
+    {
+        PC = nextPC;
+    }
+    nextPC = PC + 4;
+    // printf("PC=%x\n",PC);
+    unsigned int instruct_dec = (unsigned int)memory_read((unsigned int)PC, 4);
+    // printf("%x ##\n",instruct_dec);//
+    string instruction = dec2bin(instruct_dec);
+    if_de_rest.instruction = instruction;
+    // cout<<if_de_rest.instruction<<" ##"<<endl;////
 }
-
 // //reads the instruction register, reads operand1, operand2 fromo register file, decides the operation to be performed in execute stage
 void decode(){
         //setting the controls
@@ -118,7 +132,64 @@ void decode(){
 
 // //executes the ALU operation based on ALUop
 void execute(){
-
+    long long int alu_result;
+    alu_result=alu_unit(mycontrol_unit.aluSignal);
+    // printf("%d alu_result\n",alu_result);//
+    if(mycontrol_unit.branchSelect==0){
+        //not jalr type
+        branchPC=de_ex_rest.branch_target+PC;
+    }
+    else if(mycontrol_unit.branchSelect==1){
+        //if jalr then pc
+        branchPC=alu_result;
+    }
+    if(mycontrol_unit.branchSignal=="nbr"){
+        mycontrol_unit.setIsBranchTaken(false);
+    }
+    else if(mycontrol_unit.branchSignal=="ubr"){
+        mycontrol_unit.setIsBranchTaken(true);
+    }
+    else{
+        if(mycontrol_unit.branchSignal=="beq"){
+            if(alu_result==0){
+                mycontrol_unit.setIsBranchTaken(true);
+            }
+            else{
+                mycontrol_unit.setIsBranchTaken(false); 
+            }   
+        }
+        else if(mycontrol_unit.branchSignal=="bne"){
+            if(alu_result!=0){
+                mycontrol_unit.setIsBranchTaken(true);
+            }
+            else{
+                mycontrol_unit.setIsBranchTaken(false); 
+            }   
+        }
+        else if(mycontrol_unit.branchSignal=="blt"){
+            if(alu_result<0){
+                mycontrol_unit.setIsBranchTaken(true);
+            }
+            else{
+                mycontrol_unit.setIsBranchTaken(false); 
+            }   
+        }
+        else if(mycontrol_unit.branchSignal=="bge"){
+            printf("Bge ##");//
+            if(alu_result>=0){
+                mycontrol_unit.setIsBranchTaken(true);
+            }
+            else{
+                mycontrol_unit.setIsBranchTaken(false); 
+            }   
+        }    
+    }
+    ex_ma_rest.alu_result=alu_result;
+    ex_ma_rest.op2=(unsigned int) de_ex_rest.op2;
+    ex_ma_rest.rd=(unsigned int) de_ex_rest.rd;
+     printf("alu result :%u \n",ex_ma_rest.alu_result);//
+     printf("op2 : %u\n",ex_ma_rest.op2);//
+     printf("rd :%u\n",ex_ma_rest.rd);//
 }
 
 // //perform the memory operation
@@ -172,6 +243,28 @@ void mA() {
 }
 
 // //writes the results back to register file
-void write_back() {
-
+void write_back()
+{
+    if (mycontrol_unit.isWb)
+    {
+        unsigned int wb_result = 0;
+        if (mycontrol_unit.wbSignal == "alu")
+        {
+            wb_result = ma_wb_rest.alu_result;
+        }
+        else if (mycontrol_unit.wbSignal == "ld")
+        {
+            wb_result = ma_wb_rest.ld_result;
+        }
+        else if (mycontrol_unit.wbSignal == "pc+4")
+        {
+            wb_result = PC + 4;
+        }
+        else
+        {
+            cout << "error :undefined wbSignal" << endl;
+        }
+        registerFile.set_register(ma_wb_rest.rd, wb_result);
+        cout << "rd: " << ma_wb_rest.rd << "\nvalue: " << wb_result << endl;
+    }
 }
