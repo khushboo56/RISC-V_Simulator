@@ -57,9 +57,9 @@ void run_riscvsim() {
         mA();
         write_back();
         // break;
-        // registerFile.print_registers();
-        // cout<<"enter some number"<<endl;
-        // cin>>i;
+        registerFile.print_registers();
+        cout<<"enter some number"<<endl;
+        cin>>i;
     }
 }
 
@@ -175,11 +175,11 @@ void decode(){
     else{
         de_ex_rest.B=registerFile.get_register(rs2);
     }
-    // printf("branch target :%d\n",de_ex_rest.branch_target);//
-    // printf("A :%d\n",de_ex_rest.A);//
-    // printf("B :%d\n",de_ex_rest.B);//
-    // printf("op2 :%d\n",de_ex_rest.op2);//
-    // printf("rd :%d\n",de_ex_rest.rd); //
+    printf("branch target :%d\n",de_ex_rest.branch_target);//
+    printf("A :%d\n",de_ex_rest.A);//
+    printf("B :%d\n",de_ex_rest.B);//
+    printf("op2 :%d\n",de_ex_rest.op2);//
+    printf("rd :%d\n",de_ex_rest.rd); //
 
 }
 
@@ -238,7 +238,12 @@ void execute(){
             }   
         }    
     }
-    ex_ma_rest.alu_result=alu_result;
+    if(mycontrol_unit.isauipc){
+        ex_ma_rest.alu_result=alu_result+PC;
+    }
+    else{
+        ex_ma_rest.alu_result=alu_result;
+    }
     ex_ma_rest.op2=(unsigned int) de_ex_rest.op2;
     ex_ma_rest.rd=(unsigned int) de_ex_rest.rd;
      printf("alu result :%u \n",ex_ma_rest.alu_result);//
