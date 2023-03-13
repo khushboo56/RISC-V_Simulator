@@ -42,10 +42,24 @@ void load_program_memory(char *file_name) {
 }
 
 // //reads from the instruction memory and updates the instruction register
-void fetch() {
-
+void fetch()
+{
+    if (mycontrol_unit.isBranchTaken)
+    {
+        PC = branchPC;
+    }
+    else
+    {
+        PC = nextPC;
+    }
+    nextPC = PC + 4;
+    // printf("PC=%x\n",PC);
+    unsigned int instruct_dec = (unsigned int)memory_read((unsigned int)PC, 4);
+    // printf("%x ##\n",instruct_dec);//
+    string instruction = dec2bin(instruct_dec);
+    if_de_rest.instruction = instruction;
+    // cout<<if_de_rest.instruction<<" ##"<<endl;////
 }
-
 // //reads the instruction register, reads operand1, operand2 fromo register file, decides the operation to be performed in execute stage
 void decode(){
 
