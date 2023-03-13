@@ -100,6 +100,18 @@ void reset_proc()
 //load_program_memory reads the input memory, and pupulates the instruction 
 // memory
 void load_program_memory(char *file_name) {
+    FILE *fp;
+  unsigned int address, instruction;
+  fp = fopen(file_name, "r");
+  if(fp == NULL) {
+    printf("Error opening input mem file\n");
+    exit(1);
+  }
+  while(fscanf(fp, "%x %x", &address, &instruction) != EOF) {
+    memory_write((unsigned int) address,(unsigned long long int)instruction,4);
+    // printf("%x %u\n",address,mem[(unsigned int) address]);//  
+  }
+  fclose(fp);
 
 }
 
