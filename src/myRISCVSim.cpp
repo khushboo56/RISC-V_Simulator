@@ -142,6 +142,28 @@ void mA() {
 }
 
 // //writes the results back to register file
-void write_back() {
-
+void write_back()
+{
+    if (mycontrol_unit.isWb)
+    {
+        unsigned int wb_result = 0;
+        if (mycontrol_unit.wbSignal == "alu")
+        {
+            wb_result = ma_wb_rest.alu_result;
+        }
+        else if (mycontrol_unit.wbSignal == "ld")
+        {
+            wb_result = ma_wb_rest.ld_result;
+        }
+        else if (mycontrol_unit.wbSignal == "pc+4")
+        {
+            wb_result = PC + 4;
+        }
+        else
+        {
+            cout << "error :undefined wbSignal" << endl;
+        }
+        registerFile.set_register(ma_wb_rest.rd, wb_result);
+        cout << "rd: " << ma_wb_rest.rd << "\nvalue: " << wb_result << endl;
+    }
 }
