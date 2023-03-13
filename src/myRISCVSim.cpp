@@ -32,7 +32,14 @@ void display();
 void run_riscvsim() {
     EXIT=false;
     int i;
-    while(1) {
+    string run_mode="STEP";
+    string input;
+    cout<<"type STEP or RUN"<<endl;
+    cin>>input;
+    if(input=="RUN"){
+        run_mode="RUN";
+    }
+    while(1){
         fetch();
         decode();
         if(EXIT){
@@ -43,9 +50,14 @@ void run_riscvsim() {
         execute();
         mA();
         write_back();
-        registerFile.print_registers();
-        cout<<"enter some number"<<endl;
-        cin>>i;
+        if(run_mode=="STEP"){
+            display();
+            cout<<"type STEP or RUN"<<endl;
+            cin>>input;
+            if(input=="RUN"){
+                run_mode="RUN";
+            }
+        }   
     }
 }
 
@@ -141,8 +153,6 @@ void decode(){
 
     // getting destination register
     string rds=if_de_rest.instruction.substr(20,5);
-    cout<<if_de_rest.instruction<<" ##"<<endl;//
-    cout<<rds<<"**$**"<<endl;//
     int rd=(int)unsgn_binaryToDecimal(rds);
     // getting source register 1
     string rs1s=if_de_rest.instruction.substr(12,5);
@@ -322,10 +332,62 @@ void write_back()
 }
 
 void display(){
-    int ext=0,set_rst=0;
+    int ext=0,set_rst=1;
     while(!ext){
-        registerFile.print_registers();
-        cout<<"press 1 to set register else 0 :";
-        if(set)
+        printf("\n\n**** DISPLAY **** \n\n");
+        while(set_rst!=0){
+            registerFile.print_registers();
+            cout<<"press '1' to set register\n"<< "press '0' to exit registerfile:";
+            cin>>set_rst;
+            if(set_rst==1){
+                int rs,val;
+                cout<<"Enter the register index in Range(0,31):";
+                cin>>rs;
+                cout<<"Current value of register : "<<registerFile.get_register(rs)<<endl;
+                cout<<"Enter the value to insert :";
+                cin>>val;
+                registerFile.set_register(rs,val);
+                cout<<"register file updated"<<endl;
+            }
+        }
+        ext=0,set_rst=1;
+        int mem_op=1;
+        int op=0;
+        cout<<"You are in memory section"<<endl;
+        while(mem_op){
+            cout<<"PRESS \n'0':exit\n'1':memory_lookup\n'2':memory update\nYour Choice :";
+            cin>>op;
+            if(op==0){
+                break;
+            }
+            else if(op==1){
+                int s_addr,e_addr;
+                printf("Enter the range in hexa decimal format \nfrom start to end separated by space\nEg. 0x10002000 0x1000200c\nEnter :");
+                scanf("%x %x",&s_addr,&e_addr);
+                for(int i=0;i<=(e_addr-s_addr)/4;i++){
+                    printf("%X %d\n",s_addr+(i*4),(unsigned int)memory_read(s_addr+(i*4),4));
+                }
+            }
+            else if(op==2){
+                unsigned addr;
+                int val;
+                printf("Enter addr in hexa decimal format Eg. 0x10002000\nEnter :");
+                scanf("%x",&addr);
+                printf("Current value of memory\n%X : %lld\n",addr,memory_read(addr,4));
+                cout<<"Enter the new value of memory in decimal:";
+                scanf("%d",&val);
+                memory_write(addr,val,4);
+            }
+            else{
+                cout<<"make a valid choice"<<endl;
+            }   
+        }
+        printf("\n\n**** Enter 0 to exit display ****:");
+        int dis_cod;
+        cin>>dis_cod;
+        if(dis_cod==0){
+            return;
+        }
     }
+    
 }
