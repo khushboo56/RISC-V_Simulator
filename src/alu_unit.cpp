@@ -1,5 +1,5 @@
-#include "builtin_funcs.h"
-#include "global_variables.h"
+#include "builtin_funcs.hpp"
+#include "global_variables.hpp"
 int alu_unit(string aluSignal){
     int alu_result;
     if(aluSignal=="add"){
