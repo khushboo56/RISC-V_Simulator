@@ -4,6 +4,15 @@
 
  How to execute:
 
+ We have to give the following command in terminal to run our code: 
+ g++ main.cpp alu_unit.cpp control_unit.cpp dec2bin.cpp global_variables.cpp immediate.cpp memory_read_write_funcs.cpp myRISCVSim.cpp registerfile.cpp -o output.out
+
+ Then we should give the following command after the above command:
+ ./output.out <filename.mc>
+ where in brackets we have to write name of the file which contain our assembly code
+
+ To exit the RISCV simulator we have used opcode="1111111"
+
  Description:
  The project's sorce code contains a number of c++ and header files. Each file having it's different function to do.In phase 1 the RISCV simulator will take one instruction at a time as it contains no pipelining.
  The RISCV simulator have 5 main stages:
@@ -14,7 +23,7 @@
  5. Write back: It will make the necessary changes in the register file, PC and call for next instruction as PC will be updated after this step.
 
  Team members:
- 
+
  Chavda jayrajsinh : 2021CSB1078
 
  Khushboo gupta : 2021CSB1105
