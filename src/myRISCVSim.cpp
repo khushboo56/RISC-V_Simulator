@@ -28,35 +28,21 @@ void fetch();
 void decode();
 void mA();
 void write_back();
-
+void display();
 void run_riscvsim() {
     EXIT=false;
     int i;
     while(1) {
-        // cout<<"PC :"<<PC<<endl;
         fetch();
         decode();
         if(EXIT){
             EXIT=false;
-            registerFile.print_registers();
-            printf("ORIGINAL\n");
-            unsigned int addr=0x10001000;
-            for(int i=0;i<10;i++){
-                printf("%d. %d\n",i+1,(unsigned int)memory_read(addr,4));
-                addr+=4;
-            }
-            printf("SORTED\n");
-            addr=0x10002000;
-            for(int i=0;i<10;i++){
-                printf("%d. %d\n",i+1,(unsigned int)memory_read(addr,4));
-                addr+=4;
-            }
+            display();
             return;
         }
         execute();
         mA();
         write_back();
-        // break;
         registerFile.print_registers();
         cout<<"enter some number"<<endl;
         cin>>i;
@@ -134,15 +120,17 @@ void fetch()
         PC = nextPC;
     }
     nextPC = PC + 4;
-    // printf("PC=%x\n",PC);
+    cout<<"\nFETCH STAGE"<<endl;
+    printf("Current PC=%x    ",PC);
     unsigned int instruct_dec = (unsigned int)memory_read((unsigned int)PC, 4);
-    // printf("%x ##\n",instruct_dec);//
+    // printf("Instruction: %x ##\n",instruct_dec);
     string instruction = dec2bin(instruct_dec);
     if_de_rest.instruction = instruction;
-    // cout<<if_de_rest.instruction<<" ##"<<endl;////
+    cout<<"Instruction  "<<if_de_rest.instruction<<endl;
 }
 // //reads the instruction register, reads operand1, operand2 fromo register file, decides the operation to be performed in execute stage
 void decode(){
+    cout<<"\nDECODE STAGE"<<endl;
         //setting the controls
     mycontrol_unit.set_instruction(if_de_rest.instruction);
     mycontrol_unit.build_control();
@@ -180,12 +168,12 @@ void decode(){
     printf("B :%d\n",de_ex_rest.B);//
     printf("op2 :%d\n",de_ex_rest.op2);//
     printf("rd :%d\n",de_ex_rest.rd); //
-
 }
 
 
 // //executes the ALU operation based on ALUop
 void execute(){
+    cout<<"\nEXECUTE STAGE"<<endl;
     long long int alu_result;
     alu_result=alu_unit(mycontrol_unit.aluSignal);
     // printf("%d alu_result\n",alu_result);//
@@ -246,13 +234,15 @@ void execute(){
     }
     ex_ma_rest.op2=(unsigned int) de_ex_rest.op2;
     ex_ma_rest.rd=(unsigned int) de_ex_rest.rd;
-     printf("alu result :%u \n",ex_ma_rest.alu_result);//
-     printf("op2 : %u\n",ex_ma_rest.op2);//
-     printf("rd :%u\n",ex_ma_rest.rd);//
+    printf("alu result :%u \n",ex_ma_rest.alu_result);//
+    printf("op2 : %u\n",ex_ma_rest.op2);//
+    printf("rd :%u\n",ex_ma_rest.rd);//
+    printf("Branch PC(in hex) = %x\n",branchPC);
 }
 
 // //perform the memory operation
 void mA() {
+    cout<<"\nMEMORY ACCESS STAGE"<<endl;
     unsigned int ldResult=0;
     char my_char;
     short int my_short_int;
@@ -299,11 +289,14 @@ void mA() {
     ma_wb_rest.alu_result=ex_ma_rest.alu_result;
     ma_wb_rest.ld_result=ldResult;
     ma_wb_rest.rd=ex_ma_rest.rd;
+    cout<<"LdResult :"<<ma_wb_rest.ld_result<<endl;
+    cout<<"rd :"<<ma_wb_rest.rd<<endl;
 }
 
 // //writes the results back to register file
 void write_back()
-{
+{   
+    cout<<"\nWRITE BACK STAGE"<<endl;
     if (mycontrol_unit.isWb)
     {
         unsigned int wb_result = 0;
@@ -325,5 +318,14 @@ void write_back()
         }
         registerFile.set_register(ma_wb_rest.rd, wb_result);
         cout << "rd: " << ma_wb_rest.rd << "\nvalue: " << wb_result << endl;
+    }
+}
+
+void display(){
+    int ext=0,set_rst=0;
+    while(!ext){
+        registerFile.print_registers();
+        cout<<"press 1 to set register else 0 :";
+        if(set)
     }
 }
