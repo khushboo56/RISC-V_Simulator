@@ -1,5 +1,5 @@
-#include "builtin_funcs.hpp"
-#include "global_variables.hpp"
+#include "builtin_funcs.h"
+#include "global_variables.h"
 int alu_unit(string aluSignal){
     int alu_result;
     if(aluSignal=="add"){
@@ -32,8 +32,24 @@ int alu_unit(string aluSignal){
     else if(aluSignal=="sltu"){
         alu_result=((unsigned int) de_ex_rest.A<(unsigned int)de_ex_rest.B)?1:0;
     }
+    else if(aluSignal=="compare"){
+        if(de_ex_rest.A==de_ex_rest.B){
+            alu_result=0;
+        }
+        else if(de_ex_rest.A>de_ex_rest.B){
+            alu_result=1;
+        }
+        else{
+            alu_result=-1;
+        }
+
+
+    }
     else if(aluSignal=="no_arth"){
         alu_result=de_ex_rest.B;
+    }
+    else{
+        cout<<"** undefined aluSignal :"<<aluSignal<<endl;
     }
     return alu_result;
 }
