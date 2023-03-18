@@ -14,7 +14,7 @@ Date:
    Purpose of this file: implementation file for myRISCVSim
 */
 #include "builtin_funcs.hpp"
-#include "self_defined_funcs.hpp"
+#include"self_defined_funcs.hpp"
 #include "myRISCVSim.hpp"
 #ifndef MYCLASSES
 #define MYCLASSES
@@ -24,40 +24,40 @@ Date:
 #include "global_variables.hpp"
 using namespace std;
 
-
 void fetch();
 void decode();
 void mA();
 void write_back();
-
+void display();
 void run_riscvsim() {
     EXIT=false;
     int i;
-    while(1) {
+    string run_mode="STEP";
+    string input;
+    cout<<"type STEP or RUN"<<endl;
+    cin>>input;
+    if(input=="RUN"){
+        run_mode="RUN";
+    }
+    while(1){
         fetch();
         decode();
         if(EXIT){
             EXIT=false;
-            printf("ORIGINAL\n");
-            unsigned int addr=0x10001000;
-            for(int i=0;i<10;i++){
-                printf("%d. %d\n",i+1,(unsigned int)memory_read(addr,4));
-                addr+=4;
-            }
-            printf("SORTED\n");
-            addr=0x10002000;
-            for(int i=0;i<10;i++){
-                printf("%d. %d\n",i+1,(unsigned int)memory_read(addr,4));
-                addr+=4;
-            }
+            display();
             return;
         }
         execute();
         mA();
         write_back();
-        registerFile.print_registers();
-        cout<<"enter some number"<<endl;
-        cin>>i;
+        if(run_mode=="STEP"){
+            display();
+            cout<<"type STEP or RUN"<<endl;
+            cin>>input;
+            if(input=="RUN"){
+                run_mode="RUN";
+            }
+        }   
     }
 }
 
@@ -132,15 +132,17 @@ void fetch()
         PC = nextPC;
     }
     nextPC = PC + 4;
-    // printf("PC=%x\n",PC);
+    cout<<"\nFETCH STAGE"<<endl;
+    printf("Current PC=%x    ",PC);
     unsigned int instruct_dec = (unsigned int)memory_read((unsigned int)PC, 4);
-    // printf("%x ##\n",instruct_dec);//
+    // printf("Instruction: %x ##\n",instruct_dec);
     string instruction = dec2bin(instruct_dec);
     if_de_rest.instruction = instruction;
-    // cout<<if_de_rest.instruction<<" ##"<<endl;////
+    cout<<"Instruction  "<<if_de_rest.instruction<<endl;
 }
 // //reads the instruction register, reads operand1, operand2 fromo register file, decides the operation to be performed in execute stage
 void decode(){
+    cout<<"\nDECODE STAGE"<<endl;
         //setting the controls
     mycontrol_unit.set_instruction(if_de_rest.instruction);
     mycontrol_unit.build_control();
@@ -171,17 +173,17 @@ void decode(){
     else{
         de_ex_rest.B=registerFile.get_register(rs2);
     }
-    // printf("branch target :%d\n",de_ex_rest.branch_target);//
-    // printf("A :%d\n",de_ex_rest.A);//
-    // printf("B :%d\n",de_ex_rest.B);//
-    // printf("op2 :%d\n",de_ex_rest.op2);//
-    // printf("rd :%d\n",de_ex_rest.rd); //
-
+    printf("branch target :%d\n",de_ex_rest.branch_target);//
+    printf("A :%d\n",de_ex_rest.A);//
+    printf("B :%d\n",de_ex_rest.B);//
+    printf("op2 :%d\n",de_ex_rest.op2);//
+    printf("rd :%d\n",de_ex_rest.rd); //
 }
 
 
 // //executes the ALU operation based on ALUop
 void execute(){
+    cout<<"\nEXECUTE STAGE"<<endl;
     long long int alu_result;
     alu_result=alu_unit(mycontrol_unit.aluSignal);
     // printf("%d alu_result\n",alu_result);//
@@ -234,16 +236,23 @@ void execute(){
             }   
         }    
     }
-    ex_ma_rest.alu_result=alu_result;
+    if(mycontrol_unit.isauipc){
+        ex_ma_rest.alu_result=alu_result+PC;
+    }
+    else{
+        ex_ma_rest.alu_result=alu_result;
+    }
     ex_ma_rest.op2=(unsigned int) de_ex_rest.op2;
     ex_ma_rest.rd=(unsigned int) de_ex_rest.rd;
-     printf("alu result :%u \n",ex_ma_rest.alu_result);//
-     printf("op2 : %u\n",ex_ma_rest.op2);//
-     printf("rd :%u\n",ex_ma_rest.rd);//
+    printf("alu result :%u \n",ex_ma_rest.alu_result);//
+    printf("op2 : %u\n",ex_ma_rest.op2);//
+    printf("rd :%u\n",ex_ma_rest.rd);//
+    printf("Branch PC(in hex) = %x\n",branchPC);
 }
 
 // //perform the memory operation
 void mA() {
+    cout<<"\nMEMORY ACCESS STAGE"<<endl;
     unsigned int ldResult=0;
     char my_char;
     short int my_short_int;
@@ -290,11 +299,14 @@ void mA() {
     ma_wb_rest.alu_result=ex_ma_rest.alu_result;
     ma_wb_rest.ld_result=ldResult;
     ma_wb_rest.rd=ex_ma_rest.rd;
+    cout<<"LdResult :"<<ma_wb_rest.ld_result<<endl;
+    cout<<"rd :"<<ma_wb_rest.rd<<endl;
 }
 
 // //writes the results back to register file
 void write_back()
-{
+{   
+    cout<<"\nWRITE BACK STAGE"<<endl;
     if (mycontrol_unit.isWb)
     {
         unsigned int wb_result = 0;
@@ -320,10 +332,62 @@ void write_back()
 }
 
 void display(){
-    int ext=0,set_rst=0;
+    int ext=0,set_rst=1;
     while(!ext){
-        registerFile.print_registers();
-        cout<<"press 1 to set register else 0 :";
-        if(set)
+        printf("\n\n**** DISPLAY **** \n\n");
+        while(set_rst!=0){
+            registerFile.print_registers();
+            cout<<"press '1' to set register\n"<< "press '0' to exit registerfile:";
+            cin>>set_rst;
+            if(set_rst==1){
+                int rs,val;
+                cout<<"Enter the register index in Range(0,31):";
+                cin>>rs;
+                cout<<"Current value of register : "<<registerFile.get_register(rs)<<endl;
+                cout<<"Enter the value to insert :";
+                cin>>val;
+                registerFile.set_register(rs,val);
+                cout<<"register file updated"<<endl;
+            }
+        }
+        ext=0,set_rst=1;
+        int mem_op=1;
+        int op=0;
+        cout<<"You are in memory section"<<endl;
+        while(mem_op){
+            cout<<"PRESS \n'0':exit\n'1':memory_lookup\n'2':memory update\nYour Choice :";
+            cin>>op;
+            if(op==0){
+                break;
+            }
+            else if(op==1){
+                int s_addr,e_addr;
+                printf("Enter the range in hexa decimal format \nfrom start to end separated by space\nEg. 0x10002000 0x1000200c\nEnter :");
+                scanf("%x %x",&s_addr,&e_addr);
+                for(int i=0;i<=(e_addr-s_addr)/4;i++){
+                    printf("%X %d\n",s_addr+(i*4),(unsigned int)memory_read(s_addr+(i*4),4));
+                }
+            }
+            else if(op==2){
+                unsigned addr;
+                int val;
+                printf("Enter addr in hexa decimal format Eg. 0x10002000\nEnter :");
+                scanf("%x",&addr);
+                printf("Current value of memory\n%X : %lld\n",addr,memory_read(addr,4));
+                cout<<"Enter the new value of memory in decimal:";
+                scanf("%d",&val);
+                memory_write(addr,val,4);
+            }
+            else{
+                cout<<"make a valid choice"<<endl;
+            }   
+        }
+        printf("\n\n**** Enter 0 to exit display ****:");
+        int dis_cod;
+        cin>>dis_cod;
+        if(dis_cod==0){
+            return;
+        }
     }
+    
 }
