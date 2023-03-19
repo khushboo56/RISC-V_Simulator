@@ -1,5 +1,4 @@
 #include "builtin_funcs.hpp"
-//ingnored auipc
 #include "control_unit.hpp"
 
 Control_unit::Control_unit(){
