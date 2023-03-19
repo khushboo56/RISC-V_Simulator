@@ -9,7 +9,7 @@ extern unsigned int PC;
 extern unsigned int nextPC;
 extern int branchPC;
 extern bool EXIT;
-extern map<unsigned int,unsigned int> mem;
+extern unordered_map<unsigned int,unsigned int> mem;
 extern RegisterFile registerFile;
 extern Control_unit mycontrol_unit;
 

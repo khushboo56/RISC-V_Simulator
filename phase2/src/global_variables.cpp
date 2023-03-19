@@ -9,7 +9,7 @@ unsigned int PC=0;
 unsigned int nextPC=0;
 int branchPC=0;
 bool EXIT=false;
-map<unsigned int,char> mem;
+unordered_map<unsigned int,unsigned int> mem;
 RegisterFile registerFile;
 Control_unit mycontrol_unit;
 
