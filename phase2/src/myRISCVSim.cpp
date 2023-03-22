@@ -29,6 +29,7 @@ void decode();
 void mA();
 void write_back();
 void display();
+void positive_edge_trigger();
 void run_riscvsim() {
     EXIT=false;
     int i;
@@ -50,6 +51,7 @@ void run_riscvsim() {
         execute();
         mA();
         write_back();
+        positive_edge_trigger();
         if(run_mode=="STEP"){
             display();
             cout<<"type STEP or RUN"<<endl;
@@ -123,7 +125,7 @@ void load_program_memory(char *file_name) {
 // //reads from the instruction memory and updates the instruction register
 void fetch()
 {
-    if (mycontrol_unit.isBranchTaken)
+    if (ex_ma_rest.control.isBranchTaken)
     {
         PC = branchPC;
     }
@@ -133,20 +135,20 @@ void fetch()
     }
     nextPC = PC + 4;
     cout<<"\nFETCH STAGE"<<endl;
-    printf("Current PC=%x    ",PC);
+    printf("Current PC=%x ",PC);
     unsigned int instruct_dec = (unsigned int)memory_read((unsigned int)PC, 4);
-    // printf("Instruction: %x ##\n",instruct_dec);
     string instruction = dec2bin(instruct_dec);
-    if_de_rest.instruction = instruction;
-    cout<<"Instruction  "<<if_de_rest.instruction<<endl;
+    temp_if_de_rest.instruction = instruction;
+    temp_if_de_rest.PC=PC;
+    cout<<"Instruction  "<<temp_if_de_rest.instruction<<endl;
 }
 // //reads the instruction register, reads operand1, operand2 fromo register file, decides the operation to be performed in execute stage
 void decode(){
     cout<<"\nDECODE STAGE"<<endl;
         //setting the controls
-    mycontrol_unit.set_instruction(if_de_rest.instruction);
-    mycontrol_unit.build_control();
-    if(mycontrol_unit.isexit){
+    if_de_rest.new_control.set_instruction(if_de_rest.instruction);
+    if_de_rest.new_control.build_control();
+    if(if_de_rest.new_control.isexit){
         EXIT=true;
         return;
     }
@@ -162,22 +164,22 @@ void decode(){
     int rs2=unsgn_binaryToDecimal(rs2s);
     int imm=immediate(if_de_rest.instruction);
 
-    de_ex_rest.rd=rd;
-    de_ex_rest.A=registerFile.get_register(rs1);
-    de_ex_rest.op2=registerFile.get_register(rs2);
-    de_ex_rest.branch_target=imm;
-
-    if(mycontrol_unit.isImmediate){
-        de_ex_rest.B=imm;
+    temp_de_ex_rest.rd=rd;
+    temp_de_ex_rest.A=registerFile.get_register(rs1);
+    temp_de_ex_rest.op2=registerFile.get_register(rs2);
+    temp_de_ex_rest.branch_target=imm;
+    temp_de_ex_rest.PC=if_de_rest.PC;
+    if(if_de_rest.new_control.isImmediate){
+        temp_de_ex_rest.B=imm;
     }
     else{
-        de_ex_rest.B=registerFile.get_register(rs2);
+        temp_de_ex_rest.B=registerFile.get_register(rs2);
     }
-    printf("branch target :%d\n",de_ex_rest.branch_target);//
-    printf("A :%d\n",de_ex_rest.A);//
-    printf("B :%d\n",de_ex_rest.B);//
-    printf("op2 :%d\n",de_ex_rest.op2);//
-    printf("rd :%d\n",de_ex_rest.rd); //
+    printf("branch target :%d\n",temp_de_ex_rest.branch_target);//
+    printf("A :%d\n",temp_de_ex_rest.A);//
+    printf("B :%d\n",temp_de_ex_rest.B);//
+    printf("op2 :%d\n",temp_de_ex_rest.op2);//
+    printf("rd :%d\n",temp_de_ex_rest.rd); //
 }
 
 
@@ -185,68 +187,69 @@ void decode(){
 void execute(){
     cout<<"\nEXECUTE STAGE"<<endl;
     long long int alu_result;
-    alu_result=alu_unit(mycontrol_unit.aluSignal);
+    alu_result=alu_unit(de_ex_rest.control.aluSignal);
     // printf("%d alu_result\n",alu_result);//
-    if(mycontrol_unit.branchSelect==0){
+    if(de_ex_rest.control.branchSelect==0){
         //not jalr type
         branchPC=de_ex_rest.branch_target+PC;
     }
-    else if(mycontrol_unit.branchSelect==1){
+    else if(de_ex_rest.control.branchSelect==1){
         //if jalr then pc
         branchPC=alu_result;
     }
-    if(mycontrol_unit.branchSignal=="nbr"){
-        mycontrol_unit.setIsBranchTaken(false);
+    if(de_ex_rest.control.branchSignal=="nbr"){
+        de_ex_rest.control.setIsBranchTaken(false);
     }
-    else if(mycontrol_unit.branchSignal=="ubr"){
-        mycontrol_unit.setIsBranchTaken(true);
+    else if(de_ex_rest.control.branchSignal=="ubr"){
+        de_ex_rest.control.setIsBranchTaken(true);
     }
     else{
-        if(mycontrol_unit.branchSignal=="beq"){
+        if(de_ex_rest.control.branchSignal=="beq"){
             if(alu_result==0){
-                mycontrol_unit.setIsBranchTaken(true);
+                de_ex_rest.control.setIsBranchTaken(true);
             }
             else{
-                mycontrol_unit.setIsBranchTaken(false); 
+                de_ex_rest.control.setIsBranchTaken(false); 
             }   
         }
-        else if(mycontrol_unit.branchSignal=="bne"){
+        else if(de_ex_rest.control.branchSignal=="bne"){
             if(alu_result!=0){
-                mycontrol_unit.setIsBranchTaken(true);
+                de_ex_rest.control.setIsBranchTaken(true);
             }
             else{
-                mycontrol_unit.setIsBranchTaken(false); 
+                de_ex_rest.control.setIsBranchTaken(false); 
             }   
         }
-        else if(mycontrol_unit.branchSignal=="blt"){
+        else if(de_ex_rest.control.branchSignal=="blt"){
             if(alu_result<0){
-                mycontrol_unit.setIsBranchTaken(true);
+                de_ex_rest.control.setIsBranchTaken(true);
             }
             else{
-                mycontrol_unit.setIsBranchTaken(false); 
+                de_ex_rest.control.setIsBranchTaken(false); 
             }   
         }
-        else if(mycontrol_unit.branchSignal=="bge"){
+        else if(de_ex_rest.control.branchSignal=="bge"){
             printf("Bge ##");//
             if(alu_result>=0){
-                mycontrol_unit.setIsBranchTaken(true);
+                de_ex_rest.control.setIsBranchTaken(true);
             }
             else{
-                mycontrol_unit.setIsBranchTaken(false); 
+                de_ex_rest.control.setIsBranchTaken(false); 
             }   
         }    
     }
-    if(mycontrol_unit.isauipc){
-        ex_ma_rest.alu_result=alu_result+PC;
+    if(de_ex_rest.control.isauipc){
+        temp_ex_ma_rest.alu_result=alu_result+PC;
     }
     else{
-        ex_ma_rest.alu_result=alu_result;
+        temp_ex_ma_rest.alu_result=alu_result;
     }
-    ex_ma_rest.op2=(unsigned int) de_ex_rest.op2;
-    ex_ma_rest.rd=(unsigned int) de_ex_rest.rd;
-    printf("alu result :%u \n",ex_ma_rest.alu_result);//
-    printf("op2 : %u\n",ex_ma_rest.op2);//
-    printf("rd :%u\n",ex_ma_rest.rd);//
+    temp_ex_ma_rest.op2=(unsigned int) de_ex_rest.op2;
+    temp_ex_ma_rest.rd=(unsigned int) de_ex_rest.rd;
+    temp_ex_ma_rest.PC=de_ex_rest.PC;
+    printf("alu result :%u \n",temp_ex_ma_rest.alu_result);//
+    printf("op2 : %u\n",temp_ex_ma_rest.op2);//
+    printf("rd :%u\n",temp_ex_ma_rest.rd);//
     printf("Branch PC(in hex) = %x\n",branchPC);
 }
 
@@ -259,22 +262,22 @@ void mA() {
     int my_int;
 
     //load operation
-    if(mycontrol_unit.isLd){
-        if(mycontrol_unit.nBytes==1){
+    if(ex_ma_rest.control.isLd){
+        if(ex_ma_rest.control.nBytes==1){
             my_char=(char)memory_read((unsigned int)ex_ma_rest.alu_result,1);
             my_int=(int)my_char;
             ldResult=(unsigned int)my_int;
         }
-        else if(mycontrol_unit.nBytes==2){
+        else if(ex_ma_rest.control.nBytes==2){
             my_short_int=(short int)memory_read((unsigned int)ex_ma_rest.alu_result,2);
             my_int=(int)my_short_int;
             ldResult=(unsigned int)my_int;
         }
-        else if(mycontrol_unit.nBytes==4){
+        else if(ex_ma_rest.control.nBytes==4){
             ldResult=(int)memory_read((unsigned int)ex_ma_rest.alu_result,4);
         }
         else{
-            cout<<"nBytes is "<<mycontrol_unit.nBytes<<"not supported"<<endl;
+            cout<<"nBytes is "<<ex_ma_rest.control.nBytes<<"not supported"<<endl;
         }
     }
     else{
@@ -282,43 +285,44 @@ void mA() {
     }
 
     //store operation
-    if(mycontrol_unit.isSt){
-        if(mycontrol_unit.nBytes==1){
+    if(ex_ma_rest.control.isSt){
+        if(ex_ma_rest.control.nBytes==1){
             memory_write((unsigned int)ex_ma_rest.alu_result,(unsigned long long int) ex_ma_rest.op2,1);
         }
-        else if(mycontrol_unit.nBytes==2){
+        else if(ex_ma_rest.control.nBytes==2){
             memory_write((unsigned int)ex_ma_rest.alu_result,(unsigned long long int) ex_ma_rest.op2,2);
         }
-        else if(mycontrol_unit.nBytes==4){
+        else if(ex_ma_rest.control.nBytes==4){
             memory_write((unsigned int)ex_ma_rest.alu_result,(unsigned long long int) ex_ma_rest.op2,4);
         }
         else{
-            cout<<"nBytes is "<<mycontrol_unit.nBytes<<"not supported"<<endl;
+            cout<<"nBytes is "<<ex_ma_rest.control.nBytes<<"not supported"<<endl;
         }   
     }
-    ma_wb_rest.alu_result=ex_ma_rest.alu_result;
-    ma_wb_rest.ld_result=ldResult;
-    ma_wb_rest.rd=ex_ma_rest.rd;
-    cout<<"LdResult :"<<ma_wb_rest.ld_result<<endl;
-    cout<<"rd :"<<ma_wb_rest.rd<<endl;
+    temp_ma_wb_rest.alu_result=ex_ma_rest.alu_result;
+    temp_ma_wb_rest.ld_result=ldResult;
+    temp_ma_wb_rest.rd=ex_ma_rest.rd;
+    temp_ma_wb_rest.PC=ex_ma_rest.PC;
+    cout<<"LdResult :"<<temp_ma_wb_rest.ld_result<<endl;
+    cout<<"rd :"<<temp_ma_wb_rest.rd<<endl;
 }
 
 // //writes the results back to register file
 void write_back()
 {   
     cout<<"\nWRITE BACK STAGE"<<endl;
-    if (mycontrol_unit.isWb)
+    if (ma_wb_rest.control.isWb)
     {
         unsigned int wb_result = 0;
-        if (mycontrol_unit.wbSignal == "alu")
+        if (ma_wb_rest.control.wbSignal == "alu")
         {
             wb_result = ma_wb_rest.alu_result;
         }
-        else if (mycontrol_unit.wbSignal == "ld")
+        else if (ma_wb_rest.control.wbSignal == "ld")
         {
             wb_result = ma_wb_rest.ld_result;
         }
-        else if (mycontrol_unit.wbSignal == "pc+4")
+        else if (ma_wb_rest.control.wbSignal == "pc+4")
         {
             wb_result = PC + 4;
         }
@@ -390,4 +394,11 @@ void display(){
         }
     }
     
+}
+
+void positive_edge_trigger(){
+    if_de_rest=temp_if_de_rest;
+    de_ex_rest=temp_de_ex_rest;
+    ex_ma_rest=temp_ex_ma_rest;
+    ma_wb_rest=temp_ma_wb_rest;
 }

@@ -14,7 +14,7 @@ int alu_unit(string aluSignal){
     else if(aluSignal=="or"){
         alu_result=de_ex_rest.A|de_ex_rest.B;
     }
-    else if(mycontrol_unit.aluSignal=="and"){
+    else if(aluSignal=="and"){
         alu_result=de_ex_rest.A&de_ex_rest.B;
     }
     else if(aluSignal=="sll"){
@@ -42,8 +42,6 @@ int alu_unit(string aluSignal){
         else{
             alu_result=-1;
         }
-
-
     }
     else if(aluSignal=="no_arth"){
         alu_result=de_ex_rest.B;
