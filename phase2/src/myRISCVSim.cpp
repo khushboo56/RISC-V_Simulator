@@ -169,6 +169,7 @@ void decode(){
     temp_de_ex_rest.op2=registerFile.get_register(rs2);
     temp_de_ex_rest.branch_target=imm;
     temp_de_ex_rest.PC=if_de_rest.PC;
+    temp_de_ex_rest.control=if_de_rest.new_control;
     if(if_de_rest.new_control.isImmediate){
         temp_de_ex_rest.B=imm;
     }
@@ -247,6 +248,7 @@ void execute(){
     temp_ex_ma_rest.op2=(unsigned int) de_ex_rest.op2;
     temp_ex_ma_rest.rd=(unsigned int) de_ex_rest.rd;
     temp_ex_ma_rest.PC=de_ex_rest.PC;
+    temp_ex_ma_rest.control=de_ex_rest.control;
     printf("alu result :%u \n",temp_ex_ma_rest.alu_result);//
     printf("op2 : %u\n",temp_ex_ma_rest.op2);//
     printf("rd :%u\n",temp_ex_ma_rest.rd);//
@@ -303,6 +305,7 @@ void mA() {
     temp_ma_wb_rest.ld_result=ldResult;
     temp_ma_wb_rest.rd=ex_ma_rest.rd;
     temp_ma_wb_rest.PC=ex_ma_rest.PC;
+    temp_ma_wb_rest.control=ex_ma_rest.control;
     cout<<"LdResult :"<<temp_ma_wb_rest.ld_result<<endl;
     cout<<"rd :"<<temp_ma_wb_rest.rd<<endl;
 }
