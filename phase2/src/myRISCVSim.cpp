@@ -138,7 +138,7 @@ void fetch()
     printf("Current PC=%x ",PC);
     unsigned int instruct_dec = (unsigned int)memory_read((unsigned int)PC, 4);
     string instruction = dec2bin(instruct_dec);
-    temp_if_de_rest.instruction = instruction;
+    temp_if_de_rest.instruction = instruction;  //it is acting like a buffer register
     temp_if_de_rest.PC=PC;
     cout<<"Instruction  "<<temp_if_de_rest.instruction<<endl;
 }
