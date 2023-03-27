@@ -10,4 +10,3 @@ long long int unsign_extn(string bin);
 int alu_unit(string aluSignal);
 void memory_write(unsigned int address,unsigned long long int value,int bytes);
 unsigned long long int memory_read(unsigned int address,int bytes);
-unsigned int BTB_hash(unsigned int k);
