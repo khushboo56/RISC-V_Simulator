@@ -1,4 +1,5 @@
 #include "builtin_funcs.hpp"
+// class containing Register file
 class RegisterFile {
     vector<int> x;
 public:
