@@ -163,17 +163,17 @@ void Control_unit::build_control(){
             isSt=false;
         }
 
-        //value of nBytes
+        //value of nBytes for load and store 
         if(opcode=="0000011"||opcode=="0100011"){
             string funct3=instruction.substr(17,3);
             if(funct3=="000"){
-                nBytes=1;
+                nBytes=1;         //lb or sb 
             }
             else if(funct3=="001"){
-                nBytes=2;
+                nBytes=2;           //lh or sh 
             }
             else if(funct3=="010"){
-                nBytes=4;
+                nBytes=4;                //lw or sw
             }
         }
         else{
@@ -197,7 +197,7 @@ void Control_unit::build_control(){
             wbSignal="ld";
         }
         else if(opcode=="1101111"||opcode=="1100111"){
-            wbSignal="pc+4";
+            wbSignal="pc+4";               //for jal or jalr 
         }
         else{
             wbSignal="alu";
