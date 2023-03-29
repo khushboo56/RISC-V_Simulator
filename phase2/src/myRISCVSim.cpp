@@ -215,6 +215,7 @@ void decode(){
     int rs2=unsgn_binaryToDecimal(rs2s);
     int imm=immediate(if_de_rest.instruction);
 
+    temp_de_ex_rest.instruction=if_de_rest.instruction;
     temp_de_ex_rest.rd=rd;
     temp_de_ex_rest.A=registerFile.get_register(rs1);
     temp_de_ex_rest.op2=registerFile.get_register(rs2);
@@ -296,6 +297,7 @@ void execute(){
     else{
         temp_ex_ma_rest.alu_result=alu_result;
     }
+    temp_ex_ma_rest.instruction=de_ex_rest.instruction;
     temp_ex_ma_rest.op2=(unsigned int) de_ex_rest.op2;
     temp_ex_ma_rest.rd=(unsigned int) de_ex_rest.rd;
     temp_ex_ma_rest.PC=de_ex_rest.PC;
@@ -352,6 +354,7 @@ void mA() {
             cout<<"nBytes is "<<ex_ma_rest.control.nBytes<<"not supported"<<endl;
         }   
     }
+    temp_ma_wb_rest.instruction=ex_ma_rest.instruction;
     temp_ma_wb_rest.alu_result=ex_ma_rest.alu_result;
     temp_ma_wb_rest.ld_result=ldResult;
     temp_ma_wb_rest.rd=ex_ma_rest.rd;
@@ -387,6 +390,13 @@ void write_back()
         registerFile.set_register(ma_wb_rest.rd, wb_result);
         cout << "rd: " << ma_wb_rest.rd << "\nvalue: " << wb_result << endl;
     }
+}
+
+void positive_edge_trigger(){
+    if_de_rest=temp_if_de_rest;
+    de_ex_rest=temp_de_ex_rest;
+    ex_ma_rest=temp_ex_ma_rest;
+    ma_wb_rest=temp_ma_wb_rest;
 }
 
 void display(){
@@ -448,11 +458,4 @@ void display(){
         }
     }
     
-}
-
-void positive_edge_trigger(){
-    if_de_rest=temp_if_de_rest;
-    de_ex_rest=temp_de_ex_rest;
-    ex_ma_rest=temp_ex_ma_rest;
-    ma_wb_rest=temp_ma_wb_rest;
 }

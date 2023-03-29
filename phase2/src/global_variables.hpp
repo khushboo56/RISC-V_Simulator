@@ -30,6 +30,7 @@ struct IF_DE_rest{
   unsigned int PC;
 };
 struct DE_EX_rest{
+    string instruction;
     int branch_target;
     int B;
     int A;
@@ -40,6 +41,7 @@ struct DE_EX_rest{
 };
 
 struct EX_MA_rest{
+    string instruction;
     int alu_result;
     unsigned int op2;
     unsigned int rd;
@@ -47,6 +49,7 @@ struct EX_MA_rest{
     unsigned int PC;
 };
 struct MA_WB_rest{
+    string instruction;
     unsigned int alu_result;
     unsigned int ld_result;
     unsigned int rd;
