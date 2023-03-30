@@ -2,6 +2,7 @@
 class Control_unit{
     public:
     string instruction;
+    string inst_type;
     bool isImmediate;
     string aluSignal;
     string branchSignal;

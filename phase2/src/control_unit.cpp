@@ -3,6 +3,7 @@
 
 Control_unit::Control_unit(){
     instruction= "00000000000000000000000000000000";
+    inst_type="undef";
     isImmediate=false;
     aluSignal="add";
     branchSignal="nbr";
@@ -15,6 +16,7 @@ Control_unit::Control_unit(){
     isauipc=false;
     nBytes=0;
     isexit=false;
+
 }
 void Control_unit::set_instruction(string instruct){
     instruction=instruct;
@@ -23,10 +25,150 @@ void Control_unit::build_control(){
     string opcode=instruction.substr(25,7);
     
     if(opcode=="1111111"){
+        inst_type="exit";
         isexit=true;
     }
     else{
         isexit=false;
+        //value of inst_type;
+        if(opcode=="0110011"){
+            string funct3=instruction.substr(17,3);
+            string funct7=instruction.substr(0,7);
+            if(funct3=="000"){
+                if(funct7=="0000000"){
+                    inst_type="add";
+                }
+                else if(funct7=="0100000"){
+                    inst_type="sub";
+                }
+            }
+            else if(funct3=="001"){
+                inst_type="sll";
+            }
+            else if(funct3=="010"){
+                inst_type="slt";
+            }
+            else if(funct3=="011"){
+                inst_type="sltu";
+            }
+            else if(funct3=="100"){
+                inst_type="xor";
+            }
+            else if(funct3=="101"){
+                if(funct7=="0000000"){
+                    inst_type="srl";
+                }
+                else if(funct7=="0100000"){
+                    inst_type="sra";
+                }
+            }
+            else if(funct3=="110"){
+                inst_type="or";
+            }
+            else if(funct3=="111"){
+                inst_type="and";
+            }
+        }
+        else if(opcode=="0010011"){
+            string funct3=instruction.substr(17,3);
+            if(funct3=="000"){
+                inst_type="addi";
+            }
+            else if(funct3=="001"){
+                inst_type="slli";
+            }
+            else if(funct3=="010"){
+                inst_type="slti";
+            }
+            else if(funct3=="011"){
+                inst_type="sltiu";
+            }
+            else if(funct3=="100"){
+                inst_type="xori";
+            }
+            else if(funct3=="101"){
+                string funct7=instruction.substr(0,7);
+                if(funct7=="0000000"){
+                    inst_type="srli";
+                }
+                else if(funct7=="0100000"){
+                    inst_type="srai";
+                }
+            }
+            else if(funct3=="110"){
+                inst_type="ori";
+            }
+            else if(funct3=="111"){
+                inst_type="andi";
+            }
+        }
+        else if(opcode=="0000011"){
+            string funct3=instruction.substr(17,3);
+            if(funct3=="000"){
+                inst_type="lb";
+            }
+            else if(funct3=="001"){
+                inst_type="lh";
+            }
+            else if(funct3=="010"){
+                inst_type="lw";
+            }
+            else if(funct3=="100"){
+                inst_type="lbu";
+            }
+            else if(funct3=="101"){
+                inst_type="lhu";
+            }
+        }
+        else if(opcode=="0100011"){
+            string funct3=instruction.substr(17,3);
+            if(funct3=="000"){
+                inst_type="sb";
+            }
+            else if(funct3=="001"){
+                inst_type="sh";
+            }
+            else if(funct3=="010"){
+                inst_type="sw";
+            }
+        }
+        else if(opcode=="1100011"){
+            string funct3=instruction.substr(17,3);
+            if(funct3=="000"){
+                inst_type="beq";
+            }
+            else if(funct3=="001"){
+                inst_type="bne";
+            }
+            else if(funct3=="100"){
+                inst_type="blt";
+            }
+            else if(funct3=="101"){
+                inst_type="bge";
+            }
+            else if(funct3=="110"){
+                inst_type="bltu";
+            }
+            else if(funct3=="111"){
+                inst_type="bgeu";
+            }
+
+        }
+        else if(opcode=="1101111"){
+            inst_type="jal";
+        }
+        else if(opcode=="1100111"){
+            inst_type="jalr";
+        }
+        else if(opcode=="0110111"){
+            inst_type="lui";
+        }
+        else if(opcode=="0010111"){
+            inst_type="auipc";
+        }
+        else if(opcode=="0000000"){
+            inst_type="nop";
+        }
         //value of isImmediate
         if(opcode=="0010011"||opcode=="0000011"||opcode=="0100011"||opcode=="1100111"||opcode=="0110111"||opcode=="0010111"){
             isImmediate=true; //one for arithmetic immediate, load, store, jalr, lui, auipc
