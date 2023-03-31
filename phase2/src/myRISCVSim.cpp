@@ -179,7 +179,66 @@ void decode(bool knob2){
     forwarding_unit.wb_inst.rs2=ma_wb_rest.rs2;
 
     if(knob2){ 
-        forwarding_unit.build_mux_selectors();    
+        int op1=registerFile.get_register(rs1),op2=registerFile.get_register(rs2);
+        forwarding_unit.build_mux_selectors();
+        temp_de_ex_rest.instruction=if_de_rest.instruction;
+        temp_de_ex_rest.rd=rd;
+        
+        //forwarding
+        unsigned int wb_result = 0;
+        if (ma_wb_rest.control.isWb)
+        {
+            if (ma_wb_rest.control.wbSignal == "alu")
+            {
+                wb_result = ma_wb_rest.alu_result;
+            }
+            else if (ma_wb_rest.control.wbSignal == "ld")
+            {
+                wb_result = ma_wb_rest.ld_result;
+            }
+            else if (ma_wb_rest.control.wbSignal == "pc+4")
+            {
+                wb_result = PC + 4;
+            }
+            else
+            {
+                cout << "error :undefined wbSignal" << endl;
+            }
+        }
+        //mux1
+        if(forwarding_unit.select_de_op1==0){
+            temp_de_ex_rest.A=op1;
+        }
+        else if(forwarding_unit.select_de_op1==1){
+            temp_de_ex_rest.A=wb_result;
+        }
+        else{
+            cout<<"unidentified value of select_de_op1"<<endl;
+        }
+
+        //mux2
+        if(forwarding_unit.select_de_op2==0){
+            temp_de_ex_rest.op2=op2;
+        }
+        else if(forwarding_unit.select_de_op2==1){
+            temp_de_ex_rest.op2=wb_result;
+        }
+        else{
+            cout<<"unidentified value of select_de_op2"<<endl;
+        }
+
+
+        
+        
+        temp_de_ex_rest.branch_target=imm;
+        temp_de_ex_rest.PC=if_de_rest.PC;
+        temp_de_ex_rest.control=if_de_rest.new_control;
+        if(if_de_rest.new_control.isImmediate){
+            temp_de_ex_rest.B=imm;
+        }
+        else{
+            temp_de_ex_rest.B=temp_de_ex_rest.op2;
+        }    
     }
     else{
         if(forwarding_unit.ifDependencyrs1(forwarding_unit.de_inst,forwarding_unit.ex_inst)
@@ -204,22 +263,23 @@ void decode(bool knob2){
             return;
             cout<<"nop :stall due to data dependency(no forwarding)";
         }
+        else{
+            temp_de_ex_rest.instruction=if_de_rest.instruction;
+            temp_de_ex_rest.rd=rd;
+            temp_de_ex_rest.A=registerFile.get_register(rs1);
+            temp_de_ex_rest.op2=registerFile.get_register(rs2);
+            temp_de_ex_rest.branch_target=imm;
+            temp_de_ex_rest.PC=if_de_rest.PC;
+            temp_de_ex_rest.control=if_de_rest.new_control;
+            if(if_de_rest.new_control.isImmediate){
+                temp_de_ex_rest.B=imm;
+            }
+            else{
+                temp_de_ex_rest.B=registerFile.get_register(rs2);
+            }
+        }
     }
     
-    
-    temp_de_ex_rest.instruction=if_de_rest.instruction;
-    temp_de_ex_rest.rd=rd;
-    temp_de_ex_rest.A=registerFile.get_register(rs1);
-    temp_de_ex_rest.op2=registerFile.get_register(rs2);
-    temp_de_ex_rest.branch_target=imm;
-    temp_de_ex_rest.PC=if_de_rest.PC;
-    temp_de_ex_rest.control=if_de_rest.new_control;
-    if(if_de_rest.new_control.isImmediate){
-        temp_de_ex_rest.B=imm;
-    }
-    else{
-        temp_de_ex_rest.B=registerFile.get_register(rs2);
-    }
     printf("branch target :%d\n",temp_de_ex_rest.branch_target);//
     printf("A :%d\n",temp_de_ex_rest.A);//
     printf("B :%d\n",temp_de_ex_rest.B);//
@@ -229,7 +289,68 @@ void decode(bool knob2){
 
 
 // //executes the ALU operation based on ALUop
-void execute(){
+void execute(bool knob2){
+    //forwarding
+    if(knob2){
+        unsigned int wb_result = 0;
+        if (ma_wb_rest.control.isWb)
+        {
+            if (ma_wb_rest.control.wbSignal == "alu")
+            {
+                wb_result = ma_wb_rest.alu_result;
+            }
+            else if (ma_wb_rest.control.wbSignal == "ld")
+            {
+                wb_result = ma_wb_rest.ld_result;
+            }
+            else if (ma_wb_rest.control.wbSignal == "pc+4")
+            {
+                wb_result = PC + 4;
+            }
+            else
+            {
+                cout << "error :undefined wbSignal" << endl;
+            }
+        }
+        //mux3
+        if(forwarding_unit.select_ex_A==0){
+            ;
+        }
+        else if(forwarding_unit.select_ex_A==1){
+            de_ex_rest.A=ex_ma_rest.alu_result;
+        }
+        else if(forwarding_unit.select_ex_A==2){
+            de_ex_rest.A=wb_result;
+        }
+        else{
+            cout<<"unidentified select_ex_A"<<endl;
+        }
+        //mux4
+        if(forwarding_unit.select_ex_B==0){
+            ;
+        }
+        else if(forwarding_unit.select_ex_B==1){
+            de_ex_rest.B=ex_ma_rest.alu_result;
+        }
+        else if(forwarding_unit.select_ex_B==2){
+            de_ex_rest.B=wb_result;
+        }
+        else{
+            cout<<"unidentified select_ex_A"<<endl;
+        }
+        //mux5;
+        if(forwarding_unit.select_ex_op2==0){
+            ;
+        }
+        else if(forwarding_unit.select_ex_op2==1){
+            de_ex_rest.op2=wb_result;
+        }
+        else{
+            cout<<"unidentified select_ex_A"<<endl;
+        }
+
+    }
+    
     cout<<"\nEXECUTE STAGE"<<endl;
     long long int alu_result;
     alu_result=alu_unit(de_ex_rest.control.aluSignal);
@@ -296,6 +417,37 @@ void execute(){
     temp_ex_ma_rest.rs2=de_ex_rest.rs2;
     temp_ex_ma_rest.PC=de_ex_rest.PC;
     temp_ex_ma_rest.control=de_ex_rest.control;
+    if(knob2){
+        if((forwarding_unit.ma_inst.opcode=="lb"
+        ||forwarding_unit.ma_inst.opcode=="lh"
+        ||forwarding_unit.ma_inst.opcode=="lw")){
+            if((forwarding_unit.ex_inst.opcode=="sb"
+            ||forwarding_unit.ex_inst.opcode=="sh"
+            ||forwarding_unit.ex_inst.opcode=="sw")&&(forwarding_unit.ifDependencyrs1(forwarding_unit.ex_inst,forwarding_unit.ma_inst))){
+                //stall
+                PCWrite=false;
+                if_de_rest.writemode=false;
+                de_ex_rest.writemode=false;
+                temp_ex_ma_rest.instruction="00000000000000000000000000000000";
+                temp_ex_ma_rest.PC=0;
+                temp_ex_ma_rest.control.set_instruction(temp_ex_ma_rest.instruction);
+                temp_ex_ma_rest.control.build_control();
+
+            }
+            else if(forwarding_unit.ifDependencyrs1(forwarding_unit.ex_inst,forwarding_unit.ma_inst)
+            ||forwarding_unit.ifDependencyrs2(forwarding_unit.ex_inst,forwarding_unit.ma_inst)){
+                //stall
+                PCWrite=false;
+                if_de_rest.writemode=false;
+                de_ex_rest.writemode=false;
+                temp_ex_ma_rest.instruction="00000000000000000000000000000000";
+                temp_ex_ma_rest.PC=0;
+                temp_ex_ma_rest.control.set_instruction(temp_ex_ma_rest.instruction);
+                temp_ex_ma_rest.control.build_control();
+            }
+
+        }     
+    }
     printf("alu result :%u \n",temp_ex_ma_rest.alu_result);//
     printf("op2 : %u\n",temp_ex_ma_rest.op2);//
     printf("rd :%u\n",temp_ex_ma_rest.rd);//
@@ -304,6 +456,37 @@ void execute(){
 
 // //perform the memory operation
 void mA() {
+    //forwarding
+    unsigned int wb_result = 0;
+    if (ma_wb_rest.control.isWb)
+    {
+        if (ma_wb_rest.control.wbSignal == "alu")
+        {
+            wb_result = ma_wb_rest.alu_result;
+        }
+        else if (ma_wb_rest.control.wbSignal == "ld")
+        {
+            wb_result = ma_wb_rest.ld_result;
+        }
+        else if (ma_wb_rest.control.wbSignal == "pc+4")
+        {
+            wb_result = PC + 4;
+        }
+        else
+        {
+            cout << "error :undefined wbSignal" << endl;
+        }
+    }
+    //mux6
+    if(forwarding_unit.select_ma_op2==0){
+        ;
+    }
+    else if(forwarding_unit.select_ma_op2==1){
+        ex_ma_rest.op2=wb_result;
+    }
+    else{
+        cout<<"unidentified select_ma_op2"<<endl;
+    }
     cout<<"\nMEMORY ACCESS STAGE"<<endl;
     unsigned int ldResult=0;
     char my_char;
@@ -462,6 +645,12 @@ void positive_edge_trigger(){
     if(ma_wb_rest.writemode){
         ma_wb_rest=temp_ma_wb_rest;
     }
+
+    PCWrite=true;
+    if_de_rest.writemode=true;
+    de_ex_rest.writemode=true;
+    ex_ma_rest.writemode=true;
+    ma_wb_rest.writemode=true;
 }
 
 void display(){
