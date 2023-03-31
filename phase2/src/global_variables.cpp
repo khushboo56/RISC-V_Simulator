@@ -5,13 +5,16 @@
 #define MYCLASSES
 #include "registerfile.hpp"
 #include "control_unit.hpp"
+#include "forwarding_unit.hpp"
 #endif
 unsigned int PC=0;
 unsigned int nextPC=0;
+bool PCWrite;
 int branchPC=0;
 bool EXIT=false;
 unordered_map<unsigned int,unsigned int> mem;
 RegisterFile registerFile;
+Forwarding_unit forwarding_unit;
 
 // Control_unit mycontrol_unit;
 
@@ -29,6 +32,7 @@ struct IF_DE_rest{
   string instruction;
   Control_unit new_control;
   unsigned int PC;
+  bool writemode;
 } if_de_rest,temp_if_de_rest;
 
 struct DE_EX_rest{
@@ -38,8 +42,11 @@ struct DE_EX_rest{
     int A;
     int op2;
     int rd;
+    int rs1;
+    int rs2;
     Control_unit control;
     unsigned int PC;
+    bool writemode;
 }de_ex_rest,temp_de_ex_rest;
 
 struct EX_MA_rest{
@@ -47,8 +54,11 @@ struct EX_MA_rest{
     int alu_result;
     unsigned int op2;
     unsigned int rd;
+    int rs1;
+    int rs2;
     Control_unit control;
     unsigned int PC;
+    bool writemode;
 }ex_ma_rest,temp_ex_ma_rest;
 
 struct MA_WB_rest{
@@ -56,6 +66,9 @@ struct MA_WB_rest{
     unsigned int alu_result;
     unsigned int ld_result;
     unsigned int rd;
+    int rs1;
+    int rs2;
     Control_unit control;
     unsigned int PC;
+    bool writemode;
 }ma_wb_rest,temp_ma_wb_rest;

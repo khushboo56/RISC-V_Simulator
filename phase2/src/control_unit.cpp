@@ -169,6 +169,7 @@ void Control_unit::build_control(){
         else if(opcode=="0000000"){
             inst_type="nop";
         }
+        
         //value of isImmediate
         if(opcode=="0010011"||opcode=="0000011"||opcode=="0100011"||opcode=="1100111"||opcode=="0110111"||opcode=="0010111"){
             isImmediate=true; //one for arithmetic immediate, load, store, jalr, lui, auipc

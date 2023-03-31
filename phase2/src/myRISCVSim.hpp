@@ -1,8 +1,10 @@
 void fetch();
-void decode();
+void decode(bool knob2);
 void execute();
 void mA();
 void write_back();
-void run_riscvsim();
+void display();
+void positive_edge_trigger();
+void run_riscvsim(bool knob2);
 void reset_proc();
 void load_program_memory(char *file_name);

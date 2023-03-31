@@ -4,14 +4,17 @@
 #define MYCLASSES
 #include "registerfile.hpp"
 #include "control_unit.hpp"
+#include "forwarding_unit.hpp"
 #endif
 #define BTB_SIZE 1024
 extern unsigned int PC;
+extern bool PCWrite;
 extern unsigned int nextPC;
 extern int branchPC;
 extern bool EXIT;
 extern unordered_map<unsigned int,unsigned int> mem;
 extern RegisterFile registerFile;
+extern Forwarding_unit forwarding_unit;
 
 struct BTB_entry{
     unsigned int address;
@@ -28,6 +31,7 @@ struct IF_DE_rest{
   string instruction;
   Control_unit new_control;
   unsigned int PC;
+  bool writemode;
 };
 struct DE_EX_rest{
     string instruction;
@@ -36,8 +40,11 @@ struct DE_EX_rest{
     int A;
     int op2;
     int rd;
+    int rs1;
+    int rs2;
     Control_unit control; 
     unsigned int PC;
+    bool writemode;
 };
 
 struct EX_MA_rest{
@@ -45,16 +52,22 @@ struct EX_MA_rest{
     int alu_result;
     unsigned int op2;
     unsigned int rd;
+    int rs1;
+    int rs2;
     Control_unit control; 
     unsigned int PC;
+    bool writemode;
 };
 struct MA_WB_rest{
     string instruction;
     unsigned int alu_result;
     unsigned int ld_result;
     unsigned int rd;
+    int rs1;
+    int rs2;
     Control_unit control;
-    unsigned int PC; 
+    unsigned int PC;
+    bool writemode; 
 };
 extern struct IF_DE_rest if_de_rest;
 extern struct DE_EX_rest de_ex_rest;

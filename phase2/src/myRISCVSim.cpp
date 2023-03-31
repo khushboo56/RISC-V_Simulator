@@ -20,17 +20,13 @@ Date:
 #define MYCLASSES
 #include "registerfile.hpp"
 #include "control_unit.hpp"
+#include "forwarding_unit.hpp"
 #endif
 #include "global_variables.hpp"
 using namespace std;
 
-void fetch();
-void decode();
-void mA();
-void write_back();
-void display();
-void positive_edge_trigger();
-void run_riscvsim() {
+
+void run_riscvsim(bool knob2) {
     EXIT=false;
     int i;
     string run_mode="STEP";
@@ -42,12 +38,12 @@ void run_riscvsim() {
     }
     while(1){
         fetch();
-        decode();
-        if(EXIT){
-            EXIT=false;
-            display();
-            return;
-        }
+        decode(knob2);
+        // if(EXIT){
+        //     EXIT=false;
+        //     display();
+        //     return;
+        // }
         execute();
         mA();
         write_back();
@@ -69,6 +65,7 @@ void reset_proc()
 {
     // set PC to zero
     PC = 0;
+    PCWrite=true;
     nextPC = 0;
     branchPC = 0;
     EXIT = false;
@@ -88,20 +85,24 @@ void reset_proc()
         }
     }
     if_de_rest.instruction = "";
+    if_de_rest.writemode=true;
 
     de_ex_rest.A = 0;
     de_ex_rest.B = 0;
     de_ex_rest.branch_target = 0;
     de_ex_rest.op2 = 0;
     de_ex_rest.rd = 0;
+    de_ex_rest.writemode=true;
 
     ex_ma_rest.alu_result = 0;
     ex_ma_rest.op2 = 0;
     ex_ma_rest.rd = 0;
+    ex_ma_rest.writemode=true;
 
     ma_wb_rest.alu_result = 0;
     ma_wb_rest.ld_result = 0;
     ma_wb_rest.rd = 0;
+    ma_wb_rest.writemode=true;
 }
 
 //load_program_memory reads the input memory, and pupulates the instruction 
@@ -125,85 +126,27 @@ void load_program_memory(char *file_name) {
 // //reads from the instruction memory and updates the instruction register
 void fetch()
 {   
-    if(ex_ma_rest.control.branchSignal!="nbr"){
-        if(ex_ma_rest.control.isBranchTaken){
-            if(de_ex_rest.PC!=branchPC){ // if prediction was false
-                //if_de and de_ex set to nop
-                if_de_rest.instruction="00000000000000000000000000000000";
-                if_de_rest.PC=0;
-
-                de_ex_rest.A=0;de_ex_rest.B=0;de_ex_rest.branch_target=0;
-                de_ex_rest.control.set_instruction("00000000000000000000000000000000");
-                de_ex_rest.control.build_control();
-                de_ex_rest.op2=0;de_ex_rest.PC=0;de_ex_rest.rd=0;
-
-                //update BTB
-                {
-                    unsigned int ind=BTB_hash(ex_ma_rest.PC);
-                    BTB[ind].address=ex_ma_rest.PC;
-                    BTB[ind].branchPC=branchPC;
-                    BTB[ind].branch_taken=true;
-                }
-
-                nextPC=branchPC;
-                
-            }
-        }
-        else{
-            if(de_ex_rest.PC!=ex_ma_rest.PC+4){
-                //if_de and de_ex set to nop
-                if_de_rest.instruction="00000000000000000000000000000000";
-                if_de_rest.PC=0;
-
-                de_ex_rest.A=0;de_ex_rest.B=0;de_ex_rest.branch_target=0;
-                de_ex_rest.control.set_instruction("00000000000000000000000000000000");
-                de_ex_rest.control.build_control();
-                de_ex_rest.op2=0;de_ex_rest.PC=0;de_ex_rest.rd=0;
-
-                //update BTB
-                {
-                    unsigned int ind=BTB_hash(ex_ma_rest.PC);
-                    BTB[ind].address=ex_ma_rest.PC;
-                    BTB[ind].branchPC=branchPC;
-                    BTB[ind].branch_taken=false;
-                }
-
-                nextPC=ex_ma_rest.PC+4;
-            }
-        }
-    }
-    PC=nextPC;
     // nextPC = PC + 4;
     cout<<"\nFETCH STAGE"<<endl;
     printf("Current PC=%x ",PC);
     unsigned int instruct_dec = (unsigned int)memory_read((unsigned int)PC, 4);
     string instruction = dec2bin(instruct_dec);
-    if(BTB[BTB_hash(PC)].address==PC){
-        if(BTB[BTB_hash(PC)].branch_taken){
-            nextPC=BTB[BTB_hash(PC)].branchPC;
-        }
-        else{
-            nextPC=PC+4;
-        }
-    }
-    else{
-        nextPC=PC+4;
-    }
     temp_if_de_rest.instruction = instruction;  //it is acting like a buffer register
     temp_if_de_rest.PC=PC;
     cout<<"Instruction  "<<temp_if_de_rest.instruction<<endl;
 }
 // //reads the instruction register, reads operand1, operand2 fromo register file, decides the operation to be performed in execute stage
-void decode(){
+void decode(bool knob2){
     cout<<"\nDECODE STAGE"<<endl;
         //setting the controls
     if_de_rest.new_control.set_instruction(if_de_rest.instruction);
     if_de_rest.new_control.build_control();
     if(if_de_rest.new_control.isexit){
-        EXIT=true;
-        return;
+        // EXIT=true;
+        // return;
+        //#### relook
     }
-
+    
     // getting destination register
     string rds=if_de_rest.instruction.substr(20,5);
     int rd=(int)unsgn_binaryToDecimal(rds);
@@ -214,7 +157,56 @@ void decode(){
     string rs2s=if_de_rest.instruction.substr(7,5);
     int rs2=unsgn_binaryToDecimal(rs2s);
     int imm=immediate(if_de_rest.instruction);
+    //setting the forwarding unit 
+    forwarding_unit.de_inst.opcode=if_de_rest.new_control.inst_type;
+    forwarding_unit.de_inst.rd=rd;
+    forwarding_unit.de_inst.rs1=rs1;
+    forwarding_unit.de_inst.rs2=rs2;
 
+    forwarding_unit.ex_inst.opcode=de_ex_rest.control.inst_type;
+    forwarding_unit.ex_inst.rd=de_ex_rest.rd;
+    forwarding_unit.ex_inst.rs1=de_ex_rest.rs1;
+    forwarding_unit.ex_inst.rs2=de_ex_rest.rs2; 
+
+    forwarding_unit.ma_inst.opcode=ex_ma_rest.control.inst_type;
+    forwarding_unit.ma_inst.rd=ex_ma_rest.rd;
+    forwarding_unit.ma_inst.rs1=ex_ma_rest.rs1;
+    forwarding_unit.ma_inst.rs2=ex_ma_rest.rs2; 
+
+    forwarding_unit.wb_inst.opcode=ma_wb_rest.control.inst_type;
+    forwarding_unit.wb_inst.rd=ma_wb_rest.rd;
+    forwarding_unit.wb_inst.rs1=ma_wb_rest.rs1;
+    forwarding_unit.wb_inst.rs2=ma_wb_rest.rs2;
+
+    if(knob2){ 
+        forwarding_unit.build_mux_selectors();    
+    }
+    else{
+        if(forwarding_unit.ifDependencyrs1(forwarding_unit.de_inst,forwarding_unit.ex_inst)
+        ||forwarding_unit.ifDependencyrs2(forwarding_unit.de_inst,forwarding_unit.ex_inst)
+        ||forwarding_unit.ifDependencyrs1(forwarding_unit.de_inst,forwarding_unit.ma_inst)
+        ||forwarding_unit.ifDependencyrs2(forwarding_unit.de_inst,forwarding_unit.ma_inst)
+        ||forwarding_unit.ifDependencyrs1(forwarding_unit.de_inst,forwarding_unit.wb_inst)
+        ||forwarding_unit.ifDependencyrs2(forwarding_unit.de_inst,forwarding_unit.wb_inst)
+        ){
+            PCWrite=false;
+            if_de_rest.writemode=false;
+            
+            temp_de_ex_rest.instruction="00000000000000000000000000000000";
+            temp_de_ex_rest.rd=0;
+            temp_de_ex_rest.A=0;
+            temp_de_ex_rest.B=0;
+            temp_de_ex_rest.op2=0;
+            temp_de_ex_rest.branch_target=0;
+            temp_de_ex_rest.PC=0;
+            temp_de_ex_rest.control.set_instruction(temp_de_ex_rest.instruction);
+            temp_de_ex_rest.control.build_control();
+            return;
+            cout<<"nop :stall due to data dependency(no forwarding)";
+        }
+    }
+    
+    
     temp_de_ex_rest.instruction=if_de_rest.instruction;
     temp_de_ex_rest.rd=rd;
     temp_de_ex_rest.A=registerFile.get_register(rs1);
@@ -300,6 +292,8 @@ void execute(){
     temp_ex_ma_rest.instruction=de_ex_rest.instruction;
     temp_ex_ma_rest.op2=(unsigned int) de_ex_rest.op2;
     temp_ex_ma_rest.rd=(unsigned int) de_ex_rest.rd;
+    temp_ex_ma_rest.rs1=de_ex_rest.rs1;
+    temp_ex_ma_rest.rs2=de_ex_rest.rs2;
     temp_ex_ma_rest.PC=de_ex_rest.PC;
     temp_ex_ma_rest.control=de_ex_rest.control;
     printf("alu result :%u \n",temp_ex_ma_rest.alu_result);//
@@ -358,6 +352,8 @@ void mA() {
     temp_ma_wb_rest.alu_result=ex_ma_rest.alu_result;
     temp_ma_wb_rest.ld_result=ldResult;
     temp_ma_wb_rest.rd=ex_ma_rest.rd;
+    temp_ma_wb_rest.rs1=ex_ma_rest.rs1;
+    temp_ma_wb_rest.rs2=ex_ma_rest.rs2;
     temp_ma_wb_rest.PC=ex_ma_rest.PC;
     temp_ma_wb_rest.control=ex_ma_rest.control;
     cout<<"LdResult :"<<temp_ma_wb_rest.ld_result<<endl;
@@ -393,10 +389,79 @@ void write_back()
 }
 
 void positive_edge_trigger(){
-    if_de_rest=temp_if_de_rest;
-    de_ex_rest=temp_de_ex_rest;
-    ex_ma_rest=temp_ex_ma_rest;
-    ma_wb_rest=temp_ma_wb_rest;
+    if(ex_ma_rest.control.branchSignal!="nbr"){
+        if(ex_ma_rest.control.isBranchTaken){
+            if(de_ex_rest.PC!=branchPC){ // if prediction was false
+                //if_de and de_ex set to nop
+                temp_if_de_rest.instruction="00000000000000000000000000000000";
+                temp_if_de_rest.PC=0;
+
+                temp_de_ex_rest.A=0;temp_de_ex_rest.B=0;temp_de_ex_rest.branch_target=0;
+                temp_de_ex_rest.control.set_instruction("00000000000000000000000000000000");
+                temp_de_ex_rest.control.build_control();
+                temp_de_ex_rest.op2=0;temp_de_ex_rest.PC=0;temp_de_ex_rest.rd=0;
+
+                //update BTB
+                {
+                    unsigned int ind=BTB_hash(ex_ma_rest.PC);
+                    BTB[ind].address=ex_ma_rest.PC;
+                    BTB[ind].branchPC=branchPC;
+                    BTB[ind].branch_taken=true;
+                }
+
+                nextPC=branchPC;
+                
+            }
+        }
+        else{
+            if(de_ex_rest.PC!=ex_ma_rest.PC+4){
+                //if_de and de_ex set to nop
+                temp_if_de_rest.instruction="00000000000000000000000000000000";
+                temp_if_de_rest.PC=0;
+
+                temp_de_ex_rest.A=0;temp_de_ex_rest.B=0;temp_de_ex_rest.branch_target=0;
+                temp_de_ex_rest.control.set_instruction("00000000000000000000000000000000");
+                temp_de_ex_rest.control.build_control();
+                temp_de_ex_rest.op2=0;temp_de_ex_rest.PC=0;temp_de_ex_rest.rd=0;
+
+                //update BTB
+                {
+                    unsigned int ind=BTB_hash(ex_ma_rest.PC);
+                    BTB[ind].address=ex_ma_rest.PC;
+                    BTB[ind].branchPC=branchPC;
+                    BTB[ind].branch_taken=false;
+                }
+
+                nextPC=ex_ma_rest.PC+4;
+            }
+        }
+    }
+    if(PCWrite){
+        PC=nextPC;
+    }
+    if(BTB[BTB_hash(PC)].address==PC){
+        if(BTB[BTB_hash(PC)].branch_taken){
+            nextPC=BTB[BTB_hash(PC)].branchPC;
+        }
+        else{
+            nextPC=PC+4;
+        }
+    }
+    else{
+        nextPC=PC+4;
+    }
+    if(if_de_rest.writemode){
+        if_de_rest=temp_if_de_rest;
+    }
+    if(de_ex_rest.writemode){
+        de_ex_rest=temp_de_ex_rest;
+    }
+    if(ex_ma_rest.writemode){
+        ex_ma_rest=temp_ex_ma_rest;
+    }
+    if(ma_wb_rest.writemode){
+        ma_wb_rest=temp_ma_wb_rest;
+    }
 }
 
 void display(){

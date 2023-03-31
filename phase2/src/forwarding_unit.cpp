@@ -6,64 +6,64 @@ Forwarding_unit::Forwarding_unit(){
 void Forwarding_unit::build_mux_selectors(){
     //val for de_op1 first mux
     if(ifDependencyrs1(de_inst,wb_inst)){
-        de_op1=1;
+        select_de_op1=1;
     }
     else{
-        de_op1=0;
+        select_de_op1=0;
     }
 
     //val for de_op2 second mux
     if(ifDependencyrs2(de_inst,wb_inst)){
-        de_op2=1;
+        select_de_op2=1;
     }
     else{
-        de_op2=0;
+        select_de_op2=0;
     }
 
     //val for ex_A third mux
     if(ifDependencyrs1(ex_inst,ma_inst)){
         //according to refernce diagram 
         //ma frowarding given prefernce over wb forwarding
-        ex_A=1;
+        select_ex_A=1;
     }
     else if(ifDependencyrs1(ex_inst,wb_inst)){
         //according to refernce diagram
-        ex_A=2;
+        select_ex_A=2;
     }
     else{
         //according to refernce diagram
-        ex_A=0;
+        select_ex_A=0;
     }
 
     //selector for ex_B fourth mux
     if(ifDependencyrs2(ex_inst,ma_inst)){
         //according to refernce diagram 
         //ma frowarding given prefernce over wb forwarding
-        ex_B=1;
+        select_ex_B=1;
     }
     else if(ifDependencyrs2(ex_inst,wb_inst)){
         //according to refernce diagram
-        ex_B=2;
+        select_ex_B=2;
     }
     else{
         //according to refernce diagram
-        ex_B=0;
+        select_ex_B=0;
     }
 
     //selector for ex_op2 fifth mux
     if(ifDependencyrs2(ex_inst,wb_inst)){
-        ex_op2=1;
+        select_ex_op2=1;
     }
     else{
-        ex_op2=0;
+        select_ex_op2=0;
     }
 
     //selector for ma_op2 sixth mux
     if(ifDependencyrs2(ma_inst,wb_inst)){
-        ma_op2=1;
+        select_ma_op2=1;
     }
     else{
-        ma_op2=0;
+        select_ma_op2=0;
     }
 }
 bool Forwarding_unit::ifDependencyrs1(struct forwarding_unit_instruction inst1,struct forwarding_unit_instruction inst2){

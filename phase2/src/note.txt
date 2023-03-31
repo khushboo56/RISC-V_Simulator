@@ -1,3 +1,7 @@
 jayraj{
-    values for various fields in temporary register for no operation instruction 
+    * values for various fields in temporary register for no operation instruction 
+    * how to start 
+    * we need to relook into reset_proc()
+    * think how to end the program and flush the pipeline 
+    * change the status of write mode
 }
