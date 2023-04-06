@@ -27,6 +27,8 @@ using namespace std;
 
 
 void run_riscvsim(bool knob2) {
+    display();//
+    int cycle=1;//
     EXIT=false;
     int i;
     string run_mode="STEP";
@@ -37,6 +39,7 @@ void run_riscvsim(bool knob2) {
         run_mode="RUN";
     }
     while(!EXIT){
+        printf("*** CYCLE : %d  ***",cycle);//
         fetch();
         decode(knob2);
         // if(EXIT){
@@ -55,8 +58,10 @@ void run_riscvsim(bool knob2) {
             if(input=="RUN"){
                 run_mode="RUN";
             }
-        }   
+        } 
+        cycle++;//  
     }
+    display();
     
 }
 
@@ -67,7 +72,7 @@ void reset_proc()
     // set PC to zero
     PC = 0;
     PCWrite=true;
-    nextPC = 0;
+    nextPC = 4;
     branchPC = 0;
     EXIT = false;
     mem.clear();
