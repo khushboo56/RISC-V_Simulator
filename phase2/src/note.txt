@@ -4,4 +4,6 @@ jayraj{
     * we need to relook into reset_proc()
     * think how to end the program and flush the pipeline 
     * change the status of write mode
+    * potential hazard when execute has branch type instruction and data 
+        forwarding is off, there is dependency between decode and any other stage.
 }

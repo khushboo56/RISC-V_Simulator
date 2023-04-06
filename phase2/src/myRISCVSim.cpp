@@ -44,8 +44,8 @@ void run_riscvsim(bool knob2) {
         //     display();
         //     return;
         // }
-        execute();
-        mA();
+        execute(knob2);
+        mA(knob2);
         write_back();
         positive_edge_trigger();
         if(run_mode=="STEP"){
@@ -143,8 +143,7 @@ void decode(bool knob2){
     if_de_rest.new_control.build_control();
     if(if_de_rest.new_control.isexit){
         // EXIT=true;
-        // return;
-        //#### relook
+        // if_de_rest.writemode=false;
     }
     
     // getting destination register
@@ -455,37 +454,39 @@ void execute(bool knob2){
 }
 
 // //perform the memory operation
-void mA() {
-    //forwarding
-    unsigned int wb_result = 0;
-    if (ma_wb_rest.control.isWb)
-    {
-        if (ma_wb_rest.control.wbSignal == "alu")
+void mA(bool knob2) {
+    if(knob2){
+        //forwarding
+        unsigned int wb_result = 0;
+        if (ma_wb_rest.control.isWb)
         {
-            wb_result = ma_wb_rest.alu_result;
+            if (ma_wb_rest.control.wbSignal == "alu")
+            {
+                wb_result = ma_wb_rest.alu_result;
+            }
+            else if (ma_wb_rest.control.wbSignal == "ld")
+            {
+                wb_result = ma_wb_rest.ld_result;
+            }
+            else if (ma_wb_rest.control.wbSignal == "pc+4")
+            {
+                wb_result = PC + 4;
+            }
+            else
+            {
+                cout << "error :undefined wbSignal" << endl;
+            }
         }
-        else if (ma_wb_rest.control.wbSignal == "ld")
-        {
-            wb_result = ma_wb_rest.ld_result;
+        //mux6
+        if(forwarding_unit.select_ma_op2==0){
+            ;
         }
-        else if (ma_wb_rest.control.wbSignal == "pc+4")
-        {
-            wb_result = PC + 4;
+        else if(forwarding_unit.select_ma_op2==1){
+            ex_ma_rest.op2=wb_result;
         }
-        else
-        {
-            cout << "error :undefined wbSignal" << endl;
+        else{
+            cout<<"unidentified select_ma_op2"<<endl;
         }
-    }
-    //mux6
-    if(forwarding_unit.select_ma_op2==0){
-        ;
-    }
-    else if(forwarding_unit.select_ma_op2==1){
-        ex_ma_rest.op2=wb_result;
-    }
-    else{
-        cout<<"unidentified select_ma_op2"<<endl;
     }
     cout<<"\nMEMORY ACCESS STAGE"<<endl;
     unsigned int ldResult=0;
@@ -572,10 +573,11 @@ void write_back()
 }
 
 void positive_edge_trigger(){
-    if(ex_ma_rest.control.branchSignal!="nbr"){
+    if(ex_ma_rest.control.branchSignal!="nbr"&&iscorrect_execute()){
         if(ex_ma_rest.control.isBranchTaken){
             if(de_ex_rest.PC!=branchPC){ // if prediction was false
                 //if_de and de_ex set to nop
+
                 temp_if_de_rest.instruction="00000000000000000000000000000000";
                 temp_if_de_rest.PC=0;
 
@@ -583,6 +585,11 @@ void positive_edge_trigger(){
                 temp_de_ex_rest.control.set_instruction("00000000000000000000000000000000");
                 temp_de_ex_rest.control.build_control();
                 temp_de_ex_rest.op2=0;temp_de_ex_rest.PC=0;temp_de_ex_rest.rd=0;
+
+                // //to avoid data depedency and branch conflict 
+                PCWrite=true;
+                if_de_rest.writemode=true;
+                de_ex_rest.writemode=true;
 
                 //update BTB
                 {
@@ -606,6 +613,11 @@ void positive_edge_trigger(){
                 temp_de_ex_rest.control.set_instruction("00000000000000000000000000000000");
                 temp_de_ex_rest.control.build_control();
                 temp_de_ex_rest.op2=0;temp_de_ex_rest.PC=0;temp_de_ex_rest.rd=0;
+
+                //to avoid data depedency and branch conflict 
+                PCWrite=true;
+                if_de_rest.writemode=true;
+                de_ex_rest.writemode=true;
 
                 //update BTB
                 {
@@ -712,4 +724,21 @@ void display(){
         }
     }
     
+}
+bool iscorrect_execute(){
+    if((forwarding_unit.ma_inst.opcode=="lb"
+        ||forwarding_unit.ma_inst.opcode=="lh"
+        ||forwarding_unit.ma_inst.opcode=="lw")){
+            if((forwarding_unit.ex_inst.opcode=="sb"
+            ||forwarding_unit.ex_inst.opcode=="sh"
+            ||forwarding_unit.ex_inst.opcode=="sw")&&(forwarding_unit.ifDependencyrs1(forwarding_unit.ex_inst,forwarding_unit.ma_inst))){
+                return false;
+            }
+            else if(forwarding_unit.ifDependencyrs1(forwarding_unit.ex_inst,forwarding_unit.ma_inst)
+            ||forwarding_unit.ifDependencyrs2(forwarding_unit.ex_inst,forwarding_unit.ma_inst)){
+                return false;
+            }
+    }
+    return true;
+
 }
