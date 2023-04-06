@@ -36,7 +36,7 @@ void run_riscvsim(bool knob2) {
     if(input=="RUN"){
         run_mode="RUN";
     }
-    while(1){
+    while(!EXIT){
         fetch();
         decode(knob2);
         // if(EXIT){
@@ -57,6 +57,7 @@ void run_riscvsim(bool knob2) {
             }
         }   
     }
+    
 }
 
 // it is used to set the reset values
@@ -84,24 +85,47 @@ void reset_proc()
             registerFile.set_register(i, strtol("0x10000000", NULL, 16)); // gp
         }
     }
-    if_de_rest.instruction = "";
-    if_de_rest.writemode=true;
+    Control_unit nop_control;
+    nop_control.set_instruction("00000000000000000000000000000000");
+    nop_control.build_control();
 
+    if_de_rest.instruction = "00000000000000000000000000000000";
+    if_de_rest.writemode=true;
+    if_de_rest.PC=-1;
+    temp_if_de_rest=if_de_rest;
+
+    de_ex_rest.instruction=if_de_rest.instruction;
+    de_ex_rest.branch_target = 0;
     de_ex_rest.A = 0;
     de_ex_rest.B = 0;
-    de_ex_rest.branch_target = 0;
     de_ex_rest.op2 = 0;
     de_ex_rest.rd = 0;
+    de_ex_rest.rs1=0;
+    de_ex_rest.rs2=0;
+    de_ex_rest.control=nop_control;
+    de_ex_rest.PC=-1;
     de_ex_rest.writemode=true;
+    temp_de_ex_rest=de_ex_rest;
 
-    ex_ma_rest.alu_result = 0;
-    ex_ma_rest.op2 = 0;
-    ex_ma_rest.rd = 0;
+    ex_ma_rest.instruction=if_de_rest.instruction;
+    ex_ma_rest.alu_result=0;
+    ex_ma_rest.op2=0;
+    ex_ma_rest.rd=0;
+    ex_ma_rest.rs1=0;
+    ex_ma_rest.rs2=0;
+    ex_ma_rest.control=nop_control;
+    ex_ma_rest.PC=-1;
     ex_ma_rest.writemode=true;
+    temp_ex_ma_rest=ex_ma_rest;
 
+    ma_wb_rest.instruction=if_de_rest.instruction;
     ma_wb_rest.alu_result = 0;
     ma_wb_rest.ld_result = 0;
     ma_wb_rest.rd = 0;
+    ma_wb_rest.rs1=0;
+    ma_wb_rest.rs2=0;
+    ma_wb_rest.control=nop_control;
+    ma_wb_rest.PC=-1;
     ma_wb_rest.writemode=true;
 }
 
@@ -142,8 +166,8 @@ void decode(bool knob2){
     if_de_rest.new_control.set_instruction(if_de_rest.instruction);
     if_de_rest.new_control.build_control();
     if(if_de_rest.new_control.isexit){
-        // EXIT=true;
-        // if_de_rest.writemode=false;
+        PCWrite=false;
+        if_de_rest.writemode=false;
     }
     
     // getting destination register
@@ -290,6 +314,9 @@ void decode(bool knob2){
 // //executes the ALU operation based on ALUop
 void execute(bool knob2){
     //forwarding
+    if(de_ex_rest.control.isexit){
+        de_ex_rest.writemode=false;
+    }
     if(knob2){
         unsigned int wb_result = 0;
         if (ma_wb_rest.control.isWb)
@@ -455,6 +482,9 @@ void execute(bool knob2){
 
 // //perform the memory operation
 void mA(bool knob2) {
+    if(ex_ma_rest.control.isexit){
+        ex_ma_rest.writemode=false;
+    }
     if(knob2){
         //forwarding
         unsigned int wb_result = 0;
@@ -547,6 +577,10 @@ void mA(bool knob2) {
 // //writes the results back to register file
 void write_back()
 {   
+    if(ma_wb_rest.control.isexit){
+        EXIT=true;
+        ma_wb_rest.writemode=false;
+    }
     cout<<"\nWRITE BACK STAGE"<<endl;
     if (ma_wb_rest.control.isWb)
     {
@@ -742,3 +776,5 @@ bool iscorrect_execute(){
     return true;
 
 }
+
+
