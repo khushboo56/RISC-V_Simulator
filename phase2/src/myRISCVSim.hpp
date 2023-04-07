@@ -9,3 +9,4 @@ void run_riscvsim(bool knob2);
 void reset_proc();
 void load_program_memory(char *file_name);
 bool iscorrect_execute();
+void print_pipeline_register();

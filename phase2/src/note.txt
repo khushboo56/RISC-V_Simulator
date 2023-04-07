@@ -7,3 +7,8 @@ jayraj{
     * potential hazard when execute has branch type instruction and data 
         forwarding is off, there is dependency between decode and any other stage.
 }
+
+concerns{
+    * execute stage check all register fileds not given while stalling
+    * x0 is not a dependency
+}

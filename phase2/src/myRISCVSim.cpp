@@ -76,6 +76,9 @@ void reset_proc()
     branchPC = 0;
     EXIT = false;
     mem.clear();
+    for(int i=0;i<BTB_SIZE;i++){
+        BTB[i].address=-0xFF;
+    }
     for (int i = 0; i < 32; i++)
     {
         registerFile.set_register(i, 0);
@@ -171,6 +174,7 @@ void decode(bool knob2){
     if_de_rest.new_control.set_instruction(if_de_rest.instruction);
     if_de_rest.new_control.build_control();
     if(if_de_rest.new_control.isexit){
+
         PCWrite=false;
         if_de_rest.writemode=false;
     }
@@ -209,6 +213,7 @@ void decode(bool knob2){
     if(knob2){ 
         int op1=registerFile.get_register(rs1),op2=registerFile.get_register(rs2);
         forwarding_unit.build_mux_selectors();
+        // printf("selector")
         temp_de_ex_rest.instruction=if_de_rest.instruction;
         temp_de_ex_rest.rd=rd;
         
@@ -226,7 +231,7 @@ void decode(bool knob2){
             }
             else if (ma_wb_rest.control.wbSignal == "pc+4")
             {
-                wb_result = PC + 4;
+                wb_result = ma_wb_rest.PC + 4;
             }
             else
             {
@@ -266,7 +271,9 @@ void decode(bool knob2){
         }
         else{
             temp_de_ex_rest.B=temp_de_ex_rest.op2;
-        }    
+        }
+        temp_de_ex_rest.rs1=rs1;
+        temp_de_ex_rest.rs2=rs2;    
     }
     else{
         if(forwarding_unit.ifDependencyrs1(forwarding_unit.de_inst,forwarding_unit.ex_inst)
@@ -288,6 +295,8 @@ void decode(bool knob2){
             temp_de_ex_rest.PC=0;
             temp_de_ex_rest.control.set_instruction(temp_de_ex_rest.instruction);
             temp_de_ex_rest.control.build_control();
+            temp_de_ex_rest.rs1=0;
+            temp_de_ex_rest.rs2=0;
             return;
             cout<<"nop :stall due to data dependency(no forwarding)";
         }
@@ -299,6 +308,8 @@ void decode(bool knob2){
             temp_de_ex_rest.branch_target=imm;
             temp_de_ex_rest.PC=if_de_rest.PC;
             temp_de_ex_rest.control=if_de_rest.new_control;
+            temp_de_ex_rest.rs1=rs1;
+            temp_de_ex_rest.rs2=rs2;
             if(if_de_rest.new_control.isImmediate){
                 temp_de_ex_rest.B=imm;
             }
@@ -336,7 +347,7 @@ void execute(bool knob2){
             }
             else if (ma_wb_rest.control.wbSignal == "pc+4")
             {
-                wb_result = PC + 4;
+                wb_result = ma_wb_rest.PC + 4;
             }
             else
             {
@@ -357,10 +368,14 @@ void execute(bool knob2){
             cout<<"unidentified select_ex_A"<<endl;
         }
         //mux4
+        printf("select_ex_B%d\n",forwarding_unit.select_ex_B);
+        printf("ma rd: %d\n",forwarding_unit.ma_inst.rd);//
+        printf("ex rs2 : %d",forwarding_unit.ex_inst.rs2);
         if(forwarding_unit.select_ex_B==0){
             ;
         }
         else if(forwarding_unit.select_ex_B==1){
+            // printf("%d\n",ex_ma_rest.alu_result);//
             de_ex_rest.B=ex_ma_rest.alu_result;
         }
         else if(forwarding_unit.select_ex_B==2){
@@ -388,7 +403,7 @@ void execute(bool knob2){
     // printf("%d alu_result\n",alu_result);//
     if(de_ex_rest.control.branchSelect==0){
         //not jalr type
-        branchPC=de_ex_rest.branch_target+PC;
+        branchPC=de_ex_rest.branch_target+de_ex_rest.PC;
     }
     else if(de_ex_rest.control.branchSelect==1){
         //if jalr then pc
@@ -436,7 +451,7 @@ void execute(bool knob2){
         }    
     }
     if(de_ex_rest.control.isauipc){
-        temp_ex_ma_rest.alu_result=alu_result+PC;
+        temp_ex_ma_rest.alu_result=alu_result+de_ex_rest.PC;
     }
     else{
         temp_ex_ma_rest.alu_result=alu_result;
@@ -482,6 +497,7 @@ void execute(bool knob2){
     printf("alu result :%u \n",temp_ex_ma_rest.alu_result);//
     printf("op2 : %u\n",temp_ex_ma_rest.op2);//
     printf("rd :%u\n",temp_ex_ma_rest.rd);//
+    printf("isBranchTaken %d\n",de_ex_rest.control.isBranchTaken);
     printf("Branch PC(in hex) = %x\n",branchPC);
 }
 
@@ -505,7 +521,7 @@ void mA(bool knob2) {
             }
             else if (ma_wb_rest.control.wbSignal == "pc+4")
             {
-                wb_result = PC + 4;
+                wb_result = ma_wb_rest.PC + 4;
             }
             else
             {
@@ -600,7 +616,7 @@ void write_back()
         }
         else if (ma_wb_rest.control.wbSignal == "pc+4")
         {
-            wb_result = PC + 4;
+            wb_result = ma_wb_rest.PC + 4;
         }
         else
         {
@@ -612,11 +628,14 @@ void write_back()
 }
 
 void positive_edge_trigger(){
-    if(ex_ma_rest.control.branchSignal!="nbr"&&iscorrect_execute()){
-        if(ex_ma_rest.control.isBranchTaken){
-            if(de_ex_rest.PC!=branchPC){ // if prediction was false
+    // cout<<"ex_ma_rest.control.branchSignal"<<ex_ma_rest.control.branchSignal<<endl;//
+    // cout<<"iscorrect_execute()"<<iscorrect_execute()<<endl;
+    // coutt<<"ex+PC"<<de
+    if((de_ex_rest.control.branchSignal!="nbr")&&(iscorrect_execute())){
+        if(de_ex_rest.control.isBranchTaken){
+            if(if_de_rest.PC!=branchPC){ // if prediction was false
                 //if_de and de_ex set to nop
-
+                printf("** test 34\n");
                 temp_if_de_rest.instruction="00000000000000000000000000000000";
                 temp_if_de_rest.PC=0;
 
@@ -643,7 +662,7 @@ void positive_edge_trigger(){
             }
         }
         else{
-            if(de_ex_rest.PC!=ex_ma_rest.PC+4){
+            if(if_de_rest.PC!=de_ex_rest.PC+4){
                 //if_de and de_ex set to nop
                 temp_if_de_rest.instruction="00000000000000000000000000000000";
                 temp_if_de_rest.PC=0;
@@ -782,4 +801,9 @@ bool iscorrect_execute(){
 
 }
 
+void print_pipeline_register(){
+    printf("IF_DE Register\n");
+    // printf("",if_de_rest.instruction)
+
+}
 

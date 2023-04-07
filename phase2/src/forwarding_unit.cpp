@@ -74,7 +74,7 @@ bool Forwarding_unit::ifDependencyrs1(struct forwarding_unit_instruction inst1,s
     if((inst2.opcode=="exit")||inst2.opcode=="nop"||inst2.opcode=="sb"||inst2.opcode=="sh"||
     inst2.opcode=="sw"||inst2.opcode=="beq"||inst2.opcode=="bne"||
     inst2.opcode=="blt"||inst2.opcode=="bge"){
-        //inst2 doesnt right to register file
+        //inst2 doesnt write to register file
         return false;
     }
     if(inst1.rs1==inst2.rd){
@@ -93,7 +93,7 @@ bool Forwarding_unit::ifDependencyrs2(struct forwarding_unit_instruction inst1,s
     if(inst2.opcode=="exit"||inst2.opcode=="nop"||inst2.opcode=="sb"||inst2.opcode=="sh"||
     inst2.opcode=="sw"||inst2.opcode=="beq"||inst2.opcode=="bne"||
     inst2.opcode=="blt"||inst2.opcode=="bge"){
-        //inst2 doesnt right to register file
+        //inst2 doesnt write to register file
         return false;
     }
     if(inst1.rs2==inst2.rd){
