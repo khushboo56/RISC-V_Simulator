@@ -212,6 +212,12 @@ void decode(bool knob2){
     if(knob2){ 
         int op1=registerFile.get_register(rs1),op2=registerFile.get_register(rs2);
         forwarding_unit.build_mux_selectors();
+        printf("select_de_op1: %d\n",forwarding_unit.select_de_op1);
+        printf("select_de_op2: %d\n",forwarding_unit.select_de_op2);
+        printf("select_ex_A: %d\n",forwarding_unit.select_ex_A);
+        printf("select_ex_B: %d\n",forwarding_unit.select_ex_B);
+        printf("select_ex_op2: %d\n",forwarding_unit.select_ex_op2);
+        printf("select_ma_op2: %d\n",forwarding_unit.select_ma_op2);
         // printf("selector")
         temp_de_ex_rest.instruction=if_de_rest.instruction;
         temp_de_ex_rest.rd=rd;
@@ -529,6 +535,7 @@ void mA(bool knob2) {
                 cout << "error :undefined wbSignal" << endl;
             }
         }
+        printf("!@# wb_result: %d\n",wb_result);
         //mux6
         if(forwarding_unit.select_ma_op2==0){
             ;
@@ -571,6 +578,8 @@ void mA(bool knob2) {
 
     //store operation
     if(ex_ma_rest.control.isSt){
+        printf("ex_ma_rest.control.nBytes: %d\n",ex_ma_rest.control.nBytes);
+        printf("ex_ma_rest.op2: %d\n",ex_ma_rest.op2);
         if(ex_ma_rest.control.nBytes==1){
             memory_write((unsigned int)ex_ma_rest.alu_result,(unsigned long long int) ex_ma_rest.op2,1);
         }
@@ -582,7 +591,9 @@ void mA(bool knob2) {
         }
         else{
             cout<<"nBytes is "<<ex_ma_rest.control.nBytes<<"not supported"<<endl;
-        }   
+        }
+        printf(" value written %d\n",memory_read((unsigned int)ex_ma_rest.alu_result,4));   
+        printf("value of alu_result: %x\n",ex_ma_rest.alu_result);
     }
     temp_ma_wb_rest.instruction=ex_ma_rest.instruction;
     temp_ma_wb_rest.alu_result=ex_ma_rest.alu_result;

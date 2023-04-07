@@ -36,7 +36,10 @@ void Forwarding_unit::build_mux_selectors(){
     }
 
     //selector for ex_B fourth mux
-    if(ifDependencyrs2(ex_inst,ma_inst)){
+    if(ex_inst.opcode=="sb"||ex_inst.opcode=="sh"||ex_inst.opcode=="sw"){
+        select_ex_B=0;
+    }
+    else if(ifDependencyrs2(ex_inst,ma_inst)){
         //according to refernce diagram 
         //ma frowarding given prefernce over wb forwarding
         select_ex_B=1;
