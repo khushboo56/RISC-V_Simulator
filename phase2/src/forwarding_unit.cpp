@@ -67,6 +67,9 @@ void Forwarding_unit::build_mux_selectors(){
     }
 }
 bool Forwarding_unit::ifDependencyrs1(struct forwarding_unit_instruction inst1,struct forwarding_unit_instruction inst2){
+    if(inst1.rs1==0||inst2.rd==0){
+        return false;
+    }
     if((inst1.opcode=="exit")||(inst1.opcode=="nop")||(inst1.opcode=="jal")||(inst1.opcode=="lui")||(inst1.opcode=="auipc")){
         //inst1 does not read from register
         return false;
@@ -83,6 +86,9 @@ bool Forwarding_unit::ifDependencyrs1(struct forwarding_unit_instruction inst1,s
     return false;
 }
 bool Forwarding_unit::ifDependencyrs2(struct forwarding_unit_instruction inst1,struct forwarding_unit_instruction inst2){
+    if(inst1.rs2==0||inst2.rd==0){
+        return false;
+    }
     if((inst1.opcode=="exit")||(inst1.opcode=="nop")||inst1.opcode=="addi"||inst1.opcode=="xori"||inst1.opcode=="ori"||inst1.opcode=="andi"||
     inst1.opcode=="slli"||inst1.opcode=="srli"||inst1.opcode=="srai"||inst1.opcode=="slti"||
     inst1.opcode=="lb"||inst1.opcode=="lh"||inst1.opcode=="lw"||

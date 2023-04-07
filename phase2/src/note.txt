@@ -12,3 +12,7 @@ concerns{
     * execute stage check all register fileds not given while stalling
     * x0 is not a dependency
 }
+
+run{
+    g++ main.cpp alu_unit.cpp BTB_operations.cpp control_unit.cpp dec2bin.cpp forwarding_unit.cpp global_variables.cpp immediate.cpp memory_read_write_funcs.cpp myRISCVSim.cpp registerfile.cpp -o output.out
+}

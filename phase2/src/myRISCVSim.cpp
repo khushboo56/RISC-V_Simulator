@@ -77,7 +77,7 @@ void reset_proc()
     EXIT = false;
     mem.clear();
     for(int i=0;i<BTB_SIZE;i++){
-        BTB[i].address=-0xFF;
+        BTB[i].address=-0xF;
     }
     for (int i = 0; i < 32; i++)
     {
@@ -174,7 +174,6 @@ void decode(bool knob2){
     if_de_rest.new_control.set_instruction(if_de_rest.instruction);
     if_de_rest.new_control.build_control();
     if(if_de_rest.new_control.isexit){
-
         PCWrite=false;
         if_de_rest.writemode=false;
     }
@@ -467,17 +466,19 @@ void execute(bool knob2){
         if((forwarding_unit.ma_inst.opcode=="lb"
         ||forwarding_unit.ma_inst.opcode=="lh"
         ||forwarding_unit.ma_inst.opcode=="lw")){
-            if((forwarding_unit.ex_inst.opcode=="sb"
+            if(forwarding_unit.ex_inst.opcode=="sb"
             ||forwarding_unit.ex_inst.opcode=="sh"
-            ||forwarding_unit.ex_inst.opcode=="sw")&&(forwarding_unit.ifDependencyrs1(forwarding_unit.ex_inst,forwarding_unit.ma_inst))){
-                //stall
-                PCWrite=false;
-                if_de_rest.writemode=false;
-                de_ex_rest.writemode=false;
-                temp_ex_ma_rest.instruction="00000000000000000000000000000000";
-                temp_ex_ma_rest.PC=0;
-                temp_ex_ma_rest.control.set_instruction(temp_ex_ma_rest.instruction);
-                temp_ex_ma_rest.control.build_control();
+            ||forwarding_unit.ex_inst.opcode=="sw"){
+                if(forwarding_unit.ifDependencyrs1(forwarding_unit.ex_inst,forwarding_unit.ma_inst)){
+                    //stall
+                    PCWrite=false;
+                    if_de_rest.writemode=false;
+                    de_ex_rest.writemode=false;
+                    temp_ex_ma_rest.instruction="00000000000000000000000000000000";
+                    temp_ex_ma_rest.PC=0;
+                    temp_ex_ma_rest.control.set_instruction(temp_ex_ma_rest.instruction);
+                    temp_ex_ma_rest.control.build_control();
+                }
 
             }
             else if(forwarding_unit.ifDependencyrs1(forwarding_unit.ex_inst,forwarding_unit.ma_inst)
@@ -628,9 +629,6 @@ void write_back()
 }
 
 void positive_edge_trigger(){
-    // cout<<"ex_ma_rest.control.branchSignal"<<ex_ma_rest.control.branchSignal<<endl;//
-    // cout<<"iscorrect_execute()"<<iscorrect_execute()<<endl;
-    // coutt<<"ex+PC"<<de
     if((de_ex_rest.control.branchSignal!="nbr")&&(iscorrect_execute())){
         if(de_ex_rest.control.isBranchTaken){
             if(if_de_rest.PC!=branchPC){ // if prediction was false
@@ -648,11 +646,12 @@ void positive_edge_trigger(){
                 PCWrite=true;
                 if_de_rest.writemode=true;
                 de_ex_rest.writemode=true;
+                //ma is always written because never writemode is false;
 
                 //update BTB
                 {
-                    unsigned int ind=BTB_hash(ex_ma_rest.PC);
-                    BTB[ind].address=ex_ma_rest.PC;
+                    unsigned int ind=BTB_hash(de_ex_rest.PC);
+                    BTB[ind].address=de_ex_rest.PC;
                     BTB[ind].branchPC=branchPC;
                     BTB[ind].branch_taken=true;
                 }
@@ -679,13 +678,13 @@ void positive_edge_trigger(){
 
                 //update BTB
                 {
-                    unsigned int ind=BTB_hash(ex_ma_rest.PC);
-                    BTB[ind].address=ex_ma_rest.PC;
+                    unsigned int ind=BTB_hash(de_ex_rest.PC);
+                    BTB[ind].address=de_ex_rest.PC;
                     BTB[ind].branchPC=branchPC;
                     BTB[ind].branch_taken=false;
                 }
 
-                nextPC=ex_ma_rest.PC+4;
+                nextPC=de_ex_rest.PC+4;
             }
         }
     }
@@ -789,8 +788,10 @@ bool iscorrect_execute(){
         ||forwarding_unit.ma_inst.opcode=="lw")){
             if((forwarding_unit.ex_inst.opcode=="sb"
             ||forwarding_unit.ex_inst.opcode=="sh"
-            ||forwarding_unit.ex_inst.opcode=="sw")&&(forwarding_unit.ifDependencyrs1(forwarding_unit.ex_inst,forwarding_unit.ma_inst))){
-                return false;
+            ||forwarding_unit.ex_inst.opcode=="sw")){
+                if(forwarding_unit.ifDependencyrs1(forwarding_unit.ex_inst,forwarding_unit.ma_inst)){
+                    return false;
+                }
             }
             else if(forwarding_unit.ifDependencyrs1(forwarding_unit.ex_inst,forwarding_unit.ma_inst)
             ||forwarding_unit.ifDependencyrs2(forwarding_unit.ex_inst,forwarding_unit.ma_inst)){
