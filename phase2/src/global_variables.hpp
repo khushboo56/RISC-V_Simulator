@@ -14,6 +14,7 @@ extern int branchPC;
 extern bool EXIT;
 extern unordered_map<unsigned int,unsigned int> mem;
 extern RegisterFile registerFile;
+extern Control_unit without_pipeline_control_unit;
 extern Forwarding_unit forwarding_unit;
 
 struct BTB_entry{
@@ -77,3 +78,17 @@ extern struct IF_DE_rest temp_if_de_rest;
 extern struct DE_EX_rest temp_de_ex_rest;
 extern struct EX_MA_rest temp_ex_ma_rest;
 extern struct MA_WB_rest temp_ma_wb_rest;
+
+//knobs
+extern bool knob3;
+extern bool knob4;
+
+//stats
+
+extern FILE * sp_out;
+extern FILE * stats;
+extern long long int check_inst;
+extern int n_cycles,n_instruct,n_data_transfer,n_ALU_instruct;
+extern double CPI;
+extern int n_control_instruct,n_stalls,n_control_hazards;
+extern int n_branch_mispredicts,n_stalls_data,n_stalls_control;

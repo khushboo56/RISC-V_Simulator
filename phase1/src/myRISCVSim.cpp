@@ -26,6 +26,7 @@ using namespace std;
 
 void fetch();
 void decode();
+void execute();
 void mA();
 void write_back();
 void display();

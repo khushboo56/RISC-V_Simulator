@@ -28,7 +28,7 @@ using namespace std;
 
 void run_riscvsim(bool knob2) {
     display();//
-    int cycle=1;//
+    n_cycles=1;//
     EXIT=false;
     int i;
     string run_mode="STEP";
@@ -39,14 +39,9 @@ void run_riscvsim(bool knob2) {
         run_mode="RUN";
     }
     while(!EXIT){
-        printf("*** CYCLE : %d  ***",cycle);//
+        printf("*** CYCLE : %d  ***",n_cycles);//
         fetch();
         decode(knob2);
-        // if(EXIT){
-        //     EXIT=false;
-        //     display();
-        //     return;
-        // }
         execute(knob2);
         mA(knob2);
         write_back();
@@ -59,8 +54,9 @@ void run_riscvsim(bool knob2) {
                 run_mode="RUN";
             }
         } 
-        cycle++;//  
+        n_cycles++;//  
     }
+    n_cycles--;
     display();
     
 }
@@ -288,6 +284,7 @@ void decode(bool knob2){
         ||forwarding_unit.ifDependencyrs1(forwarding_unit.de_inst,forwarding_unit.wb_inst)
         ||forwarding_unit.ifDependencyrs2(forwarding_unit.de_inst,forwarding_unit.wb_inst)
         ){
+            n_stalls_data++;
             PCWrite=false;
             if_de_rest.writemode=false;
             
@@ -373,9 +370,6 @@ void execute(bool knob2){
             cout<<"unidentified select_ex_A"<<endl;
         }
         //mux4
-        printf("select_ex_B%d\n",forwarding_unit.select_ex_B);
-        printf("ma rd: %d\n",forwarding_unit.ma_inst.rd);//
-        printf("ex rs2 : %d",forwarding_unit.ex_inst.rs2);
         if(forwarding_unit.select_ex_B==0){
             ;
         }
@@ -477,6 +471,7 @@ void execute(bool knob2){
             ||forwarding_unit.ex_inst.opcode=="sw"){
                 if(forwarding_unit.ifDependencyrs1(forwarding_unit.ex_inst,forwarding_unit.ma_inst)){
                     //stall
+                    n_stalls_data++;
                     PCWrite=false;
                     if_de_rest.writemode=false;
                     de_ex_rest.writemode=false;
@@ -490,6 +485,7 @@ void execute(bool knob2){
             else if(forwarding_unit.ifDependencyrs1(forwarding_unit.ex_inst,forwarding_unit.ma_inst)
             ||forwarding_unit.ifDependencyrs2(forwarding_unit.ex_inst,forwarding_unit.ma_inst)){
                 //stall
+                n_stalls_data++;
                 PCWrite=false;
                 if_de_rest.writemode=false;
                 de_ex_rest.writemode=false;
@@ -535,7 +531,6 @@ void mA(bool knob2) {
                 cout << "error :undefined wbSignal" << endl;
             }
         }
-        printf("!@# wb_result: %d\n",wb_result);
         //mux6
         if(forwarding_unit.select_ma_op2==0){
             ;
@@ -578,8 +573,6 @@ void mA(bool knob2) {
 
     //store operation
     if(ex_ma_rest.control.isSt){
-        printf("ex_ma_rest.control.nBytes: %d\n",ex_ma_rest.control.nBytes);
-        printf("ex_ma_rest.op2: %d\n",ex_ma_rest.op2);
         if(ex_ma_rest.control.nBytes==1){
             memory_write((unsigned int)ex_ma_rest.alu_result,(unsigned long long int) ex_ma_rest.op2,1);
         }
@@ -592,8 +585,6 @@ void mA(bool knob2) {
         else{
             cout<<"nBytes is "<<ex_ma_rest.control.nBytes<<"not supported"<<endl;
         }
-        printf(" value written %d\n",memory_read((unsigned int)ex_ma_rest.alu_result,4));   
-        printf("value of alu_result: %x\n",ex_ma_rest.alu_result);
     }
     temp_ma_wb_rest.instruction=ex_ma_rest.instruction;
     temp_ma_wb_rest.alu_result=ex_ma_rest.alu_result;
@@ -640,11 +631,94 @@ void write_back()
 }
 
 void positive_edge_trigger(){
+    //
+    if(ma_wb_rest.control.inst_type!="nop"&&ma_wb_rest.control.inst_type!="exit"){
+        n_instruct++;
+    }
+    if(ma_wb_rest.control.inst_type=="sw"||
+    ma_wb_rest.control.inst_type=="sh"||
+    ma_wb_rest.control.inst_type=="sd"||
+    ma_wb_rest.control.inst_type=="ld"||
+    ma_wb_rest.control.inst_type=="lw"||
+    ma_wb_rest.control.inst_type=="lh")
+    {
+        n_data_transfer++;
+    }
+    else if(ma_wb_rest.control.inst_type=="add"||
+    ma_wb_rest.control.inst_type=="sub"||
+    ma_wb_rest.control.inst_type=="xor"||
+    ma_wb_rest.control.inst_type=="or"||
+    ma_wb_rest.control.inst_type=="and"||
+    ma_wb_rest.control.inst_type=="sll"||
+    ma_wb_rest.control.inst_type=="srl"||
+    ma_wb_rest.control.inst_type=="sra"||
+    ma_wb_rest.control.inst_type=="slt"||
+    ma_wb_rest.control.inst_type=="addi"||
+    ma_wb_rest.control.inst_type=="xori"||
+    ma_wb_rest.control.inst_type=="ori"||
+    ma_wb_rest.control.inst_type=="andi"||
+    ma_wb_rest.control.inst_type=="slli"||
+    ma_wb_rest.control.inst_type=="srli"||
+    ma_wb_rest.control.inst_type=="srai"||
+    ma_wb_rest.control.inst_type=="slti"){
+        n_ALU_instruct++;
+    }
+    else if(ma_wb_rest.control.inst_type=="beq"||
+    ma_wb_rest.control.inst_type=="bne"||
+    ma_wb_rest.control.inst_type=="blt"||
+    ma_wb_rest.control.inst_type=="bge"||
+    ma_wb_rest.control.inst_type=="jal"||
+    ma_wb_rest.control.inst_type=="jalr")
+    {
+        n_control_instruct++;
+    }
+    if(knob4){
+        if(if_de_rest.PC==check_inst){
+            fprintf(sp_out,"\n\nIF_DE_REGISTOR\n");
+            // fprintf(sp_out,"Instruction: %s",if_de_rest.instruction);
+            fprintf(sp_out,"PC: %X\n",if_de_rest.PC);
+        }
+        if(de_ex_rest.PC==check_inst){
+            fprintf(sp_out,"\n\n\nDE_EX_REGISTOR\n");
+            fprintf(sp_out,"Branch target :%d\n",de_ex_rest.branch_target);//
+            fprintf(sp_out,"A :%d\n",de_ex_rest.A);//
+            fprintf(sp_out,"B :%d\n",de_ex_rest.B);//
+            fprintf(sp_out,"op2 :%d\n",de_ex_rest.op2);//
+            fprintf(sp_out,"rd :%d\n",de_ex_rest.rd); //
+            fprintf(sp_out,"PC: %X\n",de_ex_rest.PC);
+            fprintf(sp_out,"rs1 :%d\n",de_ex_rest.rs1); //
+            fprintf(sp_out,"rs2 :%d\n",de_ex_rest.rs2); //
+        }
+        if(ex_ma_rest.PC==check_inst){
+            fprintf(sp_out,"\n\n\nEX_MA_REGISTOR\n");
+            fprintf(sp_out,"alu result :%u \n",ex_ma_rest.alu_result);//
+            fprintf(sp_out,"op2 : %u\n",ex_ma_rest.op2);//
+            fprintf(sp_out,"rd :%u\n",ex_ma_rest.rd);//
+            fprintf(sp_out,"rs1 :%d\n",ex_ma_rest.rs1); //
+            fprintf(sp_out,"rs2 :%d\n",ex_ma_rest.rs2); //
+            fprintf(sp_out,"Branch PC(in hex) = %x\n",branchPC);
+            fprintf(sp_out,"PC: %X\n",ex_ma_rest.PC);
+        }
+        if(ma_wb_rest.PC==check_inst){
+            fprintf(sp_out,"\n\n\nMA_WB_REGISTOR\n");
+            fprintf(sp_out,"alu result :%u \n",ma_wb_rest.alu_result);//
+            fprintf(sp_out,"ld result :%u \n",ma_wb_rest.ld_result);//
+            fprintf(sp_out,"rd :%u\n",ma_wb_rest.rd);//
+            fprintf(sp_out,"rs1 :%d\n",ma_wb_rest.rs1); //
+            fprintf(sp_out,"rs2 :%d\n",ma_wb_rest.rs2); //
+            fprintf(sp_out,"PC: %X\n",ma_wb_rest.PC);
+
+        }
+    }
+    
+    //
     if((de_ex_rest.control.branchSignal!="nbr")&&(iscorrect_execute())){
         if(de_ex_rest.control.isBranchTaken){
             if(if_de_rest.PC!=branchPC){ // if prediction was false
                 //if_de and de_ex set to nop
-                printf("** test 34\n");
+                n_control_hazards++;
+                n_branch_mispredicts++;
+                n_stalls_control+=2;
                 temp_if_de_rest.instruction="00000000000000000000000000000000";
                 temp_if_de_rest.PC=0;
 
@@ -674,6 +748,9 @@ void positive_edge_trigger(){
         else{
             if(if_de_rest.PC!=de_ex_rest.PC+4){
                 //if_de and de_ex set to nop
+                n_control_hazards++;
+                n_branch_mispredicts++;
+                n_stalls_control+=2;
                 temp_if_de_rest.instruction="00000000000000000000000000000000";
                 temp_if_de_rest.PC=0;
 
@@ -819,3 +896,308 @@ void print_pipeline_register(){
 
 }
 
+//without pipeline
+
+void run_riscvsim_without_pipeline() {
+    PC=0;
+    nextPC=0;
+    EXIT=false;
+    int i;
+    string run_mode="STEP";
+    string input;
+    cout<<"type STEP or RUN"<<endl;
+    cin>>input;
+    if(input=="RUN"){
+        run_mode="RUN";
+    }
+    while(1){
+        fetch_without_pipeline();
+        decode_without_pipeline();
+        if(EXIT){
+            EXIT=false;
+            display();
+            return;
+        }
+        execute_without_pipeline();
+        mA_without_pipeline();
+        write_back_without_pipeline();
+        if(run_mode=="STEP"){
+            display_without_pipeline();
+            cout<<"type STEP or RUN"<<endl;
+            cin>>input;
+            if(input=="RUN"){
+                run_mode="RUN";
+            }
+        }   
+    }
+}
+void fetch_without_pipeline()
+{
+    if (without_pipeline_control_unit.isBranchTaken)
+    {
+        PC = branchPC;
+    }
+    else
+    {
+        PC = nextPC;
+    }
+    nextPC = PC + 4;
+    cout<<"\nFETCH STAGE"<<endl;
+    printf("Current PC=%x    ",PC);
+    unsigned int instruct_dec = (unsigned int)memory_read((unsigned int)PC, 4);
+    // printf("Instruction: %x ##\n",instruct_dec);
+    string instruction = dec2bin(instruct_dec);
+    if_de_rest.instruction = instruction;
+    cout<<"Instruction  "<<if_de_rest.instruction<<endl;
+}
+// //reads the instruction register, reads operand1, operand2 fromo register file, decides the operation to be performed in execute stage
+void decode_without_pipeline(){
+    cout<<"\nDECODE STAGE"<<endl;
+        //setting the controls
+    without_pipeline_control_unit.set_instruction(if_de_rest.instruction);
+    without_pipeline_control_unit.build_control();
+    if(without_pipeline_control_unit.isexit){
+        EXIT=true;
+        return;
+    }
+
+    // getting destination register
+    string rds=if_de_rest.instruction.substr(20,5);
+    int rd=(int)unsgn_binaryToDecimal(rds);
+    // getting source register 1
+    string rs1s=if_de_rest.instruction.substr(12,5);
+    int rs1=unsgn_binaryToDecimal(rs1s);
+    //getting source register 2
+    string rs2s=if_de_rest.instruction.substr(7,5);
+    int rs2=unsgn_binaryToDecimal(rs2s);
+    int imm=immediate(if_de_rest.instruction);
+
+    de_ex_rest.rd=rd;
+    de_ex_rest.A=registerFile.get_register(rs1);
+    de_ex_rest.op2=registerFile.get_register(rs2);
+    de_ex_rest.branch_target=imm;
+
+    if(without_pipeline_control_unit.isImmediate){
+        de_ex_rest.B=imm;
+    }
+    else{
+        de_ex_rest.B=registerFile.get_register(rs2);
+    }
+    printf("branch target :%d\n",de_ex_rest.branch_target);//
+    printf("A :%d\n",de_ex_rest.A);//
+    printf("B :%d\n",de_ex_rest.B);//
+    printf("op2 :%d\n",de_ex_rest.op2);//
+    printf("rd :%d\n",de_ex_rest.rd); //
+}
+
+
+// //executes the ALU operation based on ALUop
+void execute_without_pipeline(){
+    cout<<"\nEXECUTE STAGE"<<endl;
+    long long int alu_result;
+    alu_result=alu_unit(without_pipeline_control_unit.aluSignal);
+    // printf("%d alu_result\n",alu_result);//
+    if(without_pipeline_control_unit.branchSelect==0){
+        //not jalr type
+        branchPC=de_ex_rest.branch_target+PC;
+    }
+    else if(without_pipeline_control_unit.branchSelect==1){
+        //if jalr then pc
+        branchPC=alu_result;
+    }
+    if(without_pipeline_control_unit.branchSignal=="nbr"){
+        without_pipeline_control_unit.setIsBranchTaken(false);
+    }
+    else if(without_pipeline_control_unit.branchSignal=="ubr"){
+        without_pipeline_control_unit.setIsBranchTaken(true);
+    }
+    else{
+        if(without_pipeline_control_unit.branchSignal=="beq"){
+            if(alu_result==0){
+                without_pipeline_control_unit.setIsBranchTaken(true);
+            }
+            else{
+                without_pipeline_control_unit.setIsBranchTaken(false); 
+            }   
+        }
+        else if(without_pipeline_control_unit.branchSignal=="bne"){
+            if(alu_result!=0){
+                without_pipeline_control_unit.setIsBranchTaken(true);
+            }
+            else{
+                without_pipeline_control_unit.setIsBranchTaken(false); 
+            }   
+        }
+        else if(without_pipeline_control_unit.branchSignal=="blt"){
+            if(alu_result<0){
+                without_pipeline_control_unit.setIsBranchTaken(true);
+            }
+            else{
+                without_pipeline_control_unit.setIsBranchTaken(false); 
+            }   
+        }
+        else if(without_pipeline_control_unit.branchSignal=="bge"){
+            printf("Bge ##");//
+            if(alu_result>=0){
+                without_pipeline_control_unit.setIsBranchTaken(true);
+            }
+            else{
+                without_pipeline_control_unit.setIsBranchTaken(false); 
+            }   
+        }    
+    }
+    if(without_pipeline_control_unit.isauipc){
+        ex_ma_rest.alu_result=alu_result+PC;
+    }
+    else{
+        ex_ma_rest.alu_result=alu_result;
+    }
+    ex_ma_rest.op2=(unsigned int) de_ex_rest.op2;
+    ex_ma_rest.rd=(unsigned int) de_ex_rest.rd;
+    printf("alu result :%u \n",ex_ma_rest.alu_result);//
+    printf("op2 : %u\n",ex_ma_rest.op2);//
+    printf("rd :%u\n",ex_ma_rest.rd);//
+    printf("Branch PC(in hex) = %x\n",branchPC);
+}
+
+// //perform the memory operation
+void mA_without_pipeline() {
+    cout<<"\nMEMORY ACCESS STAGE"<<endl;
+    unsigned int ldResult=0;
+    char my_char;
+    short int my_short_int;
+    int my_int;
+
+    //load operation
+    if(without_pipeline_control_unit.isLd){
+        if(without_pipeline_control_unit.nBytes==1){
+            my_char=(char)memory_read((unsigned int)ex_ma_rest.alu_result,1);
+            my_int=(int)my_char;
+            ldResult=(unsigned int)my_int;
+        }
+        else if(without_pipeline_control_unit.nBytes==2){
+            my_short_int=(short int)memory_read((unsigned int)ex_ma_rest.alu_result,2);
+            my_int=(int)my_short_int;
+            ldResult=(unsigned int)my_int;
+        }
+        else if(without_pipeline_control_unit.nBytes==4){
+            ldResult=(int)memory_read((unsigned int)ex_ma_rest.alu_result,4);
+        }
+        else{
+            cout<<"nBytes is "<<without_pipeline_control_unit.nBytes<<"not supported"<<endl;
+        }
+    }
+    else{
+        ldResult=0;
+    }
+
+    //store operation
+    if(without_pipeline_control_unit.isSt){
+        if(without_pipeline_control_unit.nBytes==1){
+            memory_write((unsigned int)ex_ma_rest.alu_result,(unsigned long long int) ex_ma_rest.op2,1);
+        }
+        else if(without_pipeline_control_unit.nBytes==2){
+            memory_write((unsigned int)ex_ma_rest.alu_result,(unsigned long long int) ex_ma_rest.op2,2);
+        }
+        else if(without_pipeline_control_unit.nBytes==4){
+            memory_write((unsigned int)ex_ma_rest.alu_result,(unsigned long long int) ex_ma_rest.op2,4);
+        }
+        else{
+            cout<<"nBytes is "<<without_pipeline_control_unit.nBytes<<"not supported"<<endl;
+        }   
+    }
+    ma_wb_rest.alu_result=ex_ma_rest.alu_result;
+    ma_wb_rest.ld_result=ldResult;
+    ma_wb_rest.rd=ex_ma_rest.rd;
+    cout<<"LdResult :"<<ma_wb_rest.ld_result<<endl;
+    cout<<"rd :"<<ma_wb_rest.rd<<endl;
+}
+
+// //writes the results back to register file
+void write_back_without_pipeline()
+{   
+    cout<<"\nWRITE BACK STAGE"<<endl;
+    if (without_pipeline_control_unit.isWb)
+    {
+        unsigned int wb_result = 0;
+        if (without_pipeline_control_unit.wbSignal == "alu")
+        {
+            wb_result = ma_wb_rest.alu_result;
+        }
+        else if (without_pipeline_control_unit.wbSignal == "ld")
+        {
+            wb_result = ma_wb_rest.ld_result;
+        }
+        else if (without_pipeline_control_unit.wbSignal == "pc+4")
+        {
+            wb_result = PC + 4;
+        }
+        else
+        {
+            cout << "error :undefined wbSignal" << endl;
+        }
+        registerFile.set_register(ma_wb_rest.rd, wb_result);
+        cout << "rd: " << ma_wb_rest.rd << "\nvalue: " << wb_result << endl;
+    }
+}
+
+void display_without_pipeline(){
+    int ext=0,set_rst=1;
+    while(!ext){
+        printf("\n\n**** DISPLAY **** \n\n");
+        while(set_rst!=0){
+            registerFile.print_registers();
+            cout<<"press '1' to set register\n"<< "press '0' to exit registerfile:";
+            cin>>set_rst;
+            if(set_rst==1){
+                int rs,val;
+                cout<<"Enter the register index in Range(0,31):";
+                cin>>rs;
+                cout<<"Current value of register : "<<registerFile.get_register(rs)<<endl;
+                cout<<"Enter the value to insert :";
+                cin>>val;
+                registerFile.set_register(rs,val);
+                cout<<"register file updated"<<endl;
+            }
+        }
+        ext=0,set_rst=1;
+        int mem_op=1;
+        int op=0;
+        cout<<"You are in memory section"<<endl;
+        while(mem_op){
+            cout<<"PRESS \n'0':exit\n'1':memory_lookup\n'2':memory update\nYour Choice :";
+            cin>>op;
+            if(op==0){
+                break;
+            }
+            else if(op==1){
+                int s_addr,e_addr;
+                printf("Enter the range in hexa decimal format \nfrom start to end separated by space\nEg. 0x10002000 0x1000200c\nEnter :");
+                scanf("%x %x",&s_addr,&e_addr);
+                for(int i=0;i<=(e_addr-s_addr)/4;i++){
+                    printf("%X %d\n",s_addr+(i*4),(unsigned int)memory_read(s_addr+(i*4),4));
+                }
+            }
+            else if(op==2){
+                unsigned addr;
+                int val;
+                printf("Enter addr in hexa decimal format Eg. 0x10002000\nEnter :");
+                scanf("%x",&addr);
+                printf("Current value of memory\n%X : %lld\n",addr,memory_read(addr,4));
+                cout<<"Enter the new value of memory in decimal:";
+                scanf("%d",&val);
+                memory_write(addr,val,4);
+            }
+            else{
+                cout<<"make a valid choice"<<endl;
+            }   
+        }
+        printf("\n\n**** Enter 0 to exit display ****:");
+        int dis_cod;
+        cin>>dis_cod;
+        if(dis_cod==0){
+            return;
+        }
+    }
+    
+}
