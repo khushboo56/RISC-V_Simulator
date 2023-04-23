@@ -1,0 +1,18 @@
+jayraj{
+    * values for various fields in temporary register for no operation instruction 
+    * how to start 
+    * we need to relook into reset_proc()
+    * think how to end the program and flush the pipeline 
+    * change the status of write mode
+    * potential hazard when execute has branch type instruction and data 
+        forwarding is off, there is dependency between decode and any other stage.
+}
+
+concerns{
+    * execute stage check all register fileds not given while stalling
+    * x0 is not a dependency
+}
+
+run{
+    g++ main.cpp alu_unit.cpp BTB_operations.cpp control_unit.cpp dec2bin.cpp forwarding_unit.cpp global_variables.cpp immediate.cpp memory_read_write_funcs.cpp myRISCVSim.cpp registerfile.cpp -o output.out
+}
