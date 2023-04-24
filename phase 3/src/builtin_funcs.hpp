@@ -1,6 +1,6 @@
 #include<iostream>
 #include<string>
-#include <math.h>
+#include <cmath>
 #include <unordered_map>
 #include <vector>
 #include<algorithm>
