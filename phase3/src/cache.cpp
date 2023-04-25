@@ -4,51 +4,57 @@
 #ifndef MYCLASSES
 #include "cache.hpp"
 #endif
-void Cache::setCache(int cache_size,int block_size,int ways,int block_replacement_policy,int hit_time,int miss_time){
+void Cache::setCache(int cache_size,int block_size,int ways,int block_replacement_policy,int mapping_ch,int hit_time,int miss_time){
     this->cache_size=cache_size;
     this->cache_block_size=block_size;
-    this->mapping_choice=block_replacement_policy;
+    this->mapping_choice=mapping_ch;
+    this->replacementpolicy=block_replacement_policy;
     this->ways=ways;
     this->hit_time=hit_time;
     this->miss_time=miss_time;
     this->index_bits=((int)log2(cache_size/cache_block_size)) - ( (int) log2(ways) );;
     this->block_offset_bits=(int)log2(cache_block_size);
     this->tag_bits=32 - this->index_bits - this->block_offset_bits;
-    if(block_replacement_policy==0){
+    if(this->mapping_choice==0){
         this->ways=1;
+    }
+    if(this->mapping_choice==2){
+        this->ways=(cache_size/cache_block_size);
     }
     //createCache()
 }
-void Cache::setCache(int cache_size,int block_size,int ways,int block_replacement_policy){
+void Cache::setCache(int cache_size,int block_size,int ways,int block_replacement_policy,int mapping_ch){
     this->cache_size=cache_size;
     this->cache_block_size=block_size;
-    this->mapping_choice=block_replacement_policy;
+    this->mapping_choice=mapping_ch;
+    this->replacementpolicy=block_replacement_policy;
     this->ways=ways;
     this->hit_time=1;
     this->miss_time=20;
     this->index_bits=((int)log2(cache_size/cache_block_size)) - ( (int) log2(ways) );;
     this->block_offset_bits=(int)log2(cache_block_size);
     this->tag_bits=32 - this->index_bits - this->block_offset_bits;
-    if(block_replacement_policy==0){
+    if(this->mapping_choice==0){
         this->ways=1;
     }
-    //createCache()
+    if(this->mapping_choice==2){
+        this->ways=(cache_size/cache_block_size);
+    }
 }
 void Cache::createCache(){
     mycache=(struct cache_entry *)malloc(pow(2,index_bits)*ways*sizeof(struct cache_entry));
     char * temp=(char *)malloc(pow(2,index_bits)*ways*cache_block_size*sizeof(char));
-    if(mapping_choice==1){
+    if(replacementpolicy==0){
         this->LRU.clear();
         this->LRU.resize(pow(2,index_bits)*ways,0);
     }
-    if(mapping_choice==2){
+    if(replacementpolicy==1){
         this->LFU.clear();
         this->LFU.resize(pow(2,index_bits)*ways,0);
     }
-    if(mapping_choice==3){
+    if(replacementpolicy==2){
         this->FIFO.clear();
-        queue<int> q; //to be checked later
-        this->FIFO.resize(pow(2,index_bits),q);
+        this->FIFO.resize(pow(2,index_bits)*ways,0);
     }
     for(int i=0;i<pow(2,index_bits)*ways;i++){
         mycache[i].block=temp+(i*cache_block_size);
@@ -145,8 +151,62 @@ long long int Cache:: findLFUind(unsigned int address, int bytes)
     }
     return ind;
 }
+long long int Cache::findFIFOind(unsigned int address, int bytes){
+    string str_add=dec2bin(address);
+    string s_tag=str_add.substr(0,tag_bits);
+    string s_index=str_add.substr(tag_bits,index_bits);
+    string s_BO=str_add.substr(tag_bits+index_bits,block_offset_bits);
+    unsigned long long int tag=unsgn_binaryToDecimal(s_tag);
+    unsigned long long int index=unsgn_binaryToDecimal(s_index);
+    unsigned long long int BO=unsgn_binaryToDecimal(s_BO);
+    
+    index=index*ways;
+    for(int k=index;k<index+ways;k++){
+        if( (mycache[k].valid==1) && (mycache[k].tag)==tag){
+            //hit
+            return k;
+        }
+    }
+    //miss
+    for(int k=index;k<index+ways;k++){
+        if(mycache[k].valid==0){
+            return k;  
+        }
+    }
+    for(int k=index;k<index+ways;k++){
+        if(FIFO[k]==0){
+            return k;  
+        }
+    }
+    cout<<"##fatal error##"<<endl;
+    return -1;
 
+}
+long long int Cache::findRandomind(unsigned int address, int bytes){
+    string str_add=dec2bin(address);
+    string s_tag=str_add.substr(0,tag_bits);
+    string s_index=str_add.substr(tag_bits,index_bits);
+    string s_BO=str_add.substr(tag_bits+index_bits,block_offset_bits);
+    unsigned long long int tag=unsgn_binaryToDecimal(s_tag);
+    unsigned long long int index=unsgn_binaryToDecimal(s_index);
+    unsigned long long int BO=unsgn_binaryToDecimal(s_BO);
+    
+    index=index*ways;
+    for(int k=index;k<index+ways;k++){
+        if( (mycache[k].valid==1) && (mycache[k].tag)==tag){
+            //hit
+            return k;
+        }
+    }
+    //miss
+    for(int k=index;k<index+ways;k++){
+        if(mycache[k].valid==0){
+            return k;  
+        }
+    }
+    return (index+(rand()%ways));
 
+}
 unsigned long long int Cache::readCache(unsigned int address, int bytes){
     string str_add=dec2bin(address);
     string s_tag=str_add.substr(0,tag_bits);
@@ -201,10 +261,8 @@ unsigned long long int Cache::readCache(unsigned int address, int bytes){
 
 
     }
-    else if(mapping_choice==1){ // set associative
-        int replacementpolicy=-1;
-        printf("Enter 0 for LRU, 1 for LFU and 2 for FIFO: ");
-        scanf("%d",replacementpolicy);
+    else if(mapping_choice==1||mapping_choice==2){ // set associative
+        int if_hit=0;
         long long int myind;
         int flag=1;
         if(replacementpolicy==0)
@@ -228,6 +286,18 @@ unsigned long long int Cache::readCache(unsigned int address, int bytes){
         else if(replacementpolicy==2)
         {
             //FIFO
+            myind=findFIFOind(address,bytes);
+            if(myind<0){
+                cout<<"some Error in LFU ~##"<<endl;
+                flag=0;
+            }
+        }
+        else if(replacementpolicy==3){
+            myind=findRandomind(address,bytes);
+            if(myind<0){
+                cout<<"some Error in LFU ~##"<<endl;
+                flag=0;
+            }
         }
         else {
             printf("****No replacemennt policy taken****");
@@ -240,6 +310,7 @@ unsigned long long int Cache::readCache(unsigned int address, int bytes){
         else if(mycache[myind].valid==1){
             if(mycache[myind].tag==tag){
                 //hit
+                if_hit=1;
                 for (int i = 0; i < bytes; i++)
                 {
                     temp_value = (((unsigned long long int)((unsigned char)(mycache[myind].block)[BO+i])) << (i * 8)) | (temp_value);
@@ -283,9 +354,21 @@ unsigned long long int Cache::readCache(unsigned int address, int bytes){
             //update LFU
             LFU[myind]++;            
         }
-        else if(replacementpolicy==2)
+        else if(replacementpolicy==2 )
         {
             //FIFO
+            if(!if_hit){
+                for(int k=index*ways;k<(index+1)*ways;k++){
+                    if(FIFO[k]>FIFO[myind]){
+                        FIFO[k]--;
+                    }
+                }
+                FIFO[myind]=ways-1;
+            }
+        }
+        else if(replacementpolicy==3){
+            //nothing to update
+            ;
         }
         else {
             printf("****No replacemennt policy taken****");
@@ -342,10 +425,8 @@ void Cache::writeCache(unsigned int address, unsigned long long int value, int b
         }
 
     }
-    else if(mapping_choice==1){ //set associative
-        int replacementpolicy=-1;
-        printf("Enter 0 for LRU, 1 for LFU and 2 for FIFO: ");
-        scanf("%d",replacementpolicy);
+    else if(mapping_choice==1||mapping_choice==2){ //set associative
+        int if_hit=0;
         long long int myind;
         int flag=1;
         if(replacementpolicy==0)
@@ -369,6 +450,18 @@ void Cache::writeCache(unsigned int address, unsigned long long int value, int b
         else if(replacementpolicy==2)
         {
             //FIFO
+            myind=findFIFOind(address,bytes);
+            if(myind<0){
+                cout<<"some Error in LFU ~##"<<endl;
+                flag=0;
+            }
+        }
+        else if(replacementpolicy==3){
+            myind=findRandomind(address,bytes);
+            if(myind<0){
+                cout<<"some Error in LFU ~##"<<endl;
+                flag=0;
+            }
         }
         else {
             printf("****No replacemennt policy taken****");
@@ -381,6 +474,7 @@ void Cache::writeCache(unsigned int address, unsigned long long int value, int b
         else if(mycache[myind].valid==1){
             if(mycache[myind].tag==tag){
                 //hit
+                if_hit=1;
                 mycache[myind].dirty=1;
                 for (int i = 0; i < bytes; i++)
                 {
@@ -427,11 +521,23 @@ void Cache::writeCache(unsigned int address, unsigned long long int value, int b
             //update LFU
             LFU[myind]++;            
         }
-        else if(replacementpolicy==2)
-        {
-            //FIFO
+        else if(replacementpolicy==2 )
+        {   
+            if(!if_hit){
+                //FIFO
+                for(int k=index*ways;k<(index+1)*ways;k++){
+                    if(FIFO[k]>FIFO[myind]){
+                        FIFO[k]--;
+                    }
+                }
+                FIFO[myind]=ways-1;
+            }
         }
-        else {
+        else if(replacementpolicy==3){
+            //nothing to update
+            ;
+        }
+        else{
             printf("****No replacemennt policy taken****");
         }
     }

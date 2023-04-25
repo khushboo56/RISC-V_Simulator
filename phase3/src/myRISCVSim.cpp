@@ -138,9 +138,9 @@ void reset_proc()
 //load_program_memory reads the input memory, and pupulates the instruction 
 // memory
 void load_program_memory(char *file_name) {
-    instruction_cache.setCache(1024,64,4,1);
+    instruction_cache.setCache(1024,64,4,3,1);
     instruction_cache.createCache();
-    data_cache.setCache(1024,64,4,1);
+    data_cache.setCache(1024,64,4,3,1);
     data_cache.createCache();
     FILE *fp;
     unsigned int address, instruction;
