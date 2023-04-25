@@ -59,6 +59,18 @@ void run_riscvsim(bool knob2) {
         n_cycles++;//  
     }
     n_cycles--;
+    n_hitsi=instruction_cache.n_hits;
+    n_missi=instruction_cache.n_miss;
+    n_coldi=instruction_cache.n_cold;
+    n_conflicti=instruction_cache.n_conflict;
+    n_capacityi=instruction_cache.n_conflict;
+    
+    n_hitsd=data_cache.n_hits;
+    n_missd=data_cache.n_miss;
+    n_coldd=data_cache.n_cold;
+    n_conflictd=data_cache.n_conflict;
+    n_capacityd=data_cache.n_conflict;
+
     display();
     
 }
@@ -138,9 +150,9 @@ void reset_proc()
 //load_program_memory reads the input memory, and pupulates the instruction 
 // memory
 void load_program_memory(char *file_name) {
-    instruction_cache.setCache(1024,64,4,3,1);
+    instruction_cache.setCache(CACHESIZE,BLOCKSIZE,WAYS,REPLACEMENTPOLICY,MAPPINGCHOICE,hittime,misstime);
     instruction_cache.createCache();
-    data_cache.setCache(1024,64,4,3,1);
+    data_cache.setCache(CACHESIZE,BLOCKSIZE,WAYS,REPLACEMENTPOLICY,MAPPINGCHOICE,hittime,misstime);
     data_cache.createCache();
     FILE *fp;
     unsigned int address, instruction;

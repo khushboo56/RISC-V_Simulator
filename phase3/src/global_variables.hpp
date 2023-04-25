@@ -95,3 +95,6 @@ extern int n_cycles,n_instruct,n_data_transfer,n_ALU_instruct;
 extern double CPI;
 extern int n_control_instruct,n_stalls,n_control_hazards;
 extern int n_branch_mispredicts,n_stalls_data,n_stalls_control;
+extern int n_accessd,n_hitsd,n_missd, n_coldd,n_conflictd,n_capacityd;
+extern int n_accessi,n_hitsi,n_missi, n_coldi,n_conflicti,n_capacityi;
+extern int CACHESIZE, BLOCKSIZE,WAYS,REPLACEMENTPOLICY,MAPPINGCHOICE,hittime,misstime;

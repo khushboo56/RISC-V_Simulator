@@ -221,7 +221,7 @@ unsigned long long int Cache::readCache(unsigned int address, int bytes){
             if(mycache[index].tag==tag){
                 //hit
                 // cout<<"**"<<endl;
-
+                n_hits++;
                 unsigned long long int temp_value = 0;
                 for (int i = 0; i < bytes; i++)
                 {
@@ -231,6 +231,8 @@ unsigned long long int Cache::readCache(unsigned int address, int bytes){
             }
             else{
                 //miss
+                n_miss++;
+                n_conflict++;
                 if(mycache[index].dirty==1){
                     unsigned int temp_address= (((unsigned int)mycache[index].tag)<<(index_bits+block_offset_bits))+(((unsigned int)index)<<(block_offset_bits));
                     write_cache_to_main(temp_address,mycache[index].block);
@@ -250,6 +252,8 @@ unsigned long long int Cache::readCache(unsigned int address, int bytes){
         }
         else{
             //miss
+            n_miss++;
+            n_cold++;
             read_cache_from_main(address,index);
             unsigned long long int temp_value = 0;
             for (int i = 0; i < bytes; i++)
@@ -310,6 +314,7 @@ unsigned long long int Cache::readCache(unsigned int address, int bytes){
         else if(mycache[myind].valid==1){
             if(mycache[myind].tag==tag){
                 //hit
+                n_hits++;
                 if_hit=1;
                 for (int i = 0; i < bytes; i++)
                 {
@@ -319,6 +324,8 @@ unsigned long long int Cache::readCache(unsigned int address, int bytes){
             }
             else{
                 //miss
+                n_miss++;
+                n_conflict++;
                 if(mycache[myind].dirty==1){
                     unsigned int temp_address= (((unsigned int)mycache[myind].tag)<<(index_bits+block_offset_bits))+(((unsigned int)index)<<(block_offset_bits));
                     write_cache_to_main(temp_address,mycache[myind].block);
@@ -332,7 +339,9 @@ unsigned long long int Cache::readCache(unsigned int address, int bytes){
 
             }
         }
-        else{
+        else{//miss
+            n_miss++;
+            n_cold++;
             read_cache_from_main(address,myind);
             for (int i = 0; i < bytes; i++)
             {
@@ -392,6 +401,7 @@ void Cache::writeCache(unsigned int address, unsigned long long int value, int b
         if(mycache[index].valid==1){
             if(mycache[index].tag==tag){
                 //hit
+                n_hits++;
                 mycache[index].dirty=1;
                 for (int i = 0; i < bytes; i++)
                 {
@@ -400,6 +410,8 @@ void Cache::writeCache(unsigned int address, unsigned long long int value, int b
             }
             else{
                 //miss
+                n_miss++;
+                n_conflict++;
                 if(mycache[index].dirty==1){
                     unsigned int temp_address= (((unsigned int)mycache[index].tag)<<(index_bits+block_offset_bits))+(((unsigned int)index)<<(block_offset_bits));
                     write_cache_to_main(temp_address,mycache[index].block);
@@ -416,6 +428,8 @@ void Cache::writeCache(unsigned int address, unsigned long long int value, int b
         }
         else{
             //miss
+            n_miss++;
+            n_cold++;
             read_cache_from_main(address,index);
             mycache[index].dirty=1;
             for (int i = 0; i < bytes; i++)
@@ -474,6 +488,7 @@ void Cache::writeCache(unsigned int address, unsigned long long int value, int b
         else if(mycache[myind].valid==1){
             if(mycache[myind].tag==tag){
                 //hit
+                n_hits++;
                 if_hit=1;
                 mycache[myind].dirty=1;
                 for (int i = 0; i < bytes; i++)
@@ -484,6 +499,8 @@ void Cache::writeCache(unsigned int address, unsigned long long int value, int b
             }
             else{
                 //miss
+                n_miss++;
+                n_conflict++;
                 if(mycache[myind].dirty==1){
                     unsigned int temp_address= (((unsigned int)mycache[myind].tag)<<(index_bits+block_offset_bits))+(((unsigned int)index)<<(block_offset_bits));
                     write_cache_to_main(temp_address,mycache[myind].block);
@@ -499,6 +516,9 @@ void Cache::writeCache(unsigned int address, unsigned long long int value, int b
             }
         }
         else{
+            //miss
+            n_miss++;
+            n_cold++;
             read_cache_from_main(address,myind);
             mycache[myind].dirty=1;
             for (int i = 0; i < bytes; i++)

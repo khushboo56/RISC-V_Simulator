@@ -18,7 +18,7 @@ class Cache{
     int index_bits;
     int block_offset_bits;
     int tag_bits;
-
+    int n_hits, n_miss,n_cold,n_capacity,n_conflict;
     vector<int> LRU;
     vector<int> LFU;
     vector<int> FIFO;

@@ -36,7 +36,9 @@ struct DE_EX_rest de_ex_rest,temp_de_ex_rest;
 struct EX_MA_rest ex_ma_rest,temp_ex_ma_rest;
 
 struct MA_WB_rest ma_wb_rest,temp_ma_wb_rest;
-
+int CACHESIZE, BLOCKSIZE,WAYS,REPLACEMENTPOLICY,MAPPINGCHOICE,hittime,misstime;
+int n_accessd,n_hitsd,n_missd, n_coldd,n_conflictd,n_capacityd;
+int n_accessi,n_hitsi,n_missi, n_coldi,n_conflicti,n_capacityi;
 //
 bool knob3=false;
 bool knob4=false;
