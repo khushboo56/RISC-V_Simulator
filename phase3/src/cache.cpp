@@ -37,6 +37,10 @@ void Cache::setCache(int cache_size,int block_size,int ways,int block_replacemen
 void Cache::createCache(){
     mycache=(struct cache_entry *)malloc(pow(2,index_bits)*ways*sizeof(struct cache_entry));
     char * temp=(char *)malloc(pow(2,index_bits)*ways*cache_block_size*sizeof(char));
+    if(mapping_choice==1){
+        this->LRU.clear();
+        this->LRU.resize(pow(2,index_bits)*ways,0);
+    }
     for(int i=0;i<pow(2,index_bits)*ways;i++){
         mycache[i].block=temp+(i*cache_block_size);
         mycache[i].dirty=0;
@@ -67,18 +71,40 @@ void Cache::read_cache_from_main(unsigned int address,int index){
     }
 
 }
+long long int Cache::findLRUind(unsigned int address, int bytes){
+    string str_add=dec2bin(address);
+    string s_tag=str_add.substr(0,tag_bits);
+    string s_index=str_add.substr(tag_bits,index_bits);
+    string s_BO=str_add.substr(tag_bits+index_bits,block_offset_bits);
+    unsigned long long int tag=unsgn_binaryToDecimal(s_tag);
+    unsigned long long int index=unsgn_binaryToDecimal(s_index);
+    unsigned long long int BO=unsgn_binaryToDecimal(s_BO);
+    
+    index=index*ways;
+    for(int k=index;k<index+ways;k++){
+        if( (mycache[k].valid==1) && (mycache[k].tag)==tag){
+            //hit
+            return k;
+        }
+    }
+    //miss
+    for(int k=index;k<index+ways;k++){
+        if(mycache[k].valid==0){
+            return k;  
+        }
+    }
+    for(int k=index;k<index+ways;k++){
+        if(LRU[k]==0){
+            return k;  
+        }
+    }
+    return -1;
+}
 unsigned long long int Cache::readCache(unsigned int address, int bytes){
     string str_add=dec2bin(address);
     string s_tag=str_add.substr(0,tag_bits);
     string s_index=str_add.substr(tag_bits,index_bits);
     string s_BO=str_add.substr(tag_bits+index_bits,block_offset_bits);
-    // cout<<"str_add"<<str_add<<endl;
-    // cout<<"tag_bits"<<tag_bits<<endl;
-    // cout<<"index_bits"<<index_bits<<endl;
-    // cout<<"block_offset_bits"<<block_offset_bits<<endl;
-    // cout<<"s_tag:"<<s_tag<<endl;
-    // cout<<"s_index:"<<s_index<<endl;
-    // cout<<"s_BO"<<s_BO<<endl;
     unsigned long long int tag=unsgn_binaryToDecimal(s_tag);
     unsigned long long int index=unsgn_binaryToDecimal(s_index);
     unsigned long long int BO=unsgn_binaryToDecimal(s_BO);
@@ -127,6 +153,52 @@ unsigned long long int Cache::readCache(unsigned int address, int bytes){
         }
 
 
+    }
+    else if(mapping_choice==1){
+        long long int myind=findLRUind(address,bytes);
+        unsigned long long int temp_value = 0;
+        if(myind<0){
+            cout<<"some Error in LRU ~##"<<endl;
+        }
+        else if(mycache[myind].valid==1){
+            if(mycache[myind].tag==tag){
+                //hit
+                for (int i = 0; i < bytes; i++)
+                {
+                    temp_value = (((unsigned long long int)((unsigned char)(mycache[myind].block)[BO+i])) << (i * 8)) | (temp_value);
+                }
+                
+            }
+            else{
+                //miss
+                if(mycache[myind].dirty==1){
+                    unsigned int temp_address= (((unsigned int)mycache[myind].tag)<<(index_bits+block_offset_bits))+(((unsigned int)index)<<(block_offset_bits));
+                    write_cache_to_main(temp_address,mycache[myind].block);
+                }
+                // read_cache_to_main()
+                read_cache_from_main(address,myind);
+                for (int i = 0; i < bytes; i++)
+                {
+                    temp_value = (((unsigned long long int)((unsigned char)(mycache[myind].block)[BO+i])) << (i * 8)) | (temp_value);
+                }
+
+            }
+        }
+        else{
+            read_cache_from_main(address,myind);
+            for (int i = 0; i < bytes; i++)
+            {
+                temp_value = (((unsigned long long int)((unsigned char)(mycache[myind].block)[BO+i])) << (i * 8)) | (temp_value);
+            }
+        }
+        //update LRU
+        for(int k=index*ways;k<(index+1)*ways;k++){
+            if(LRU[k]>LRU[myind]){
+                LRU[k]--;
+            }
+        }
+        LRU[myind]=ways-1;
+        return temp_value;
     }
     else{
         return 0;
@@ -177,6 +249,53 @@ void Cache::writeCache(unsigned int address, unsigned long long int value, int b
             }
         }
 
+    }
+    else if(mapping_choice==1){
+        long long int myind=findLRUind(address,bytes);
+        if(myind<0){
+            cout<<"some Error in LRU ~##"<<endl;
+        }
+        else if(mycache[myind].valid==1){
+            if(mycache[myind].tag==tag){
+                //hit
+                mycache[myind].dirty=1;
+                for (int i = 0; i < bytes; i++)
+                {
+                    mycache[myind].block[BO+i]= (char)((value >> (i * 8)) & 0xFF);
+                }
+                
+            }
+            else{
+                //miss
+                if(mycache[myind].dirty==1){
+                    unsigned int temp_address= (((unsigned int)mycache[myind].tag)<<(index_bits+block_offset_bits))+(((unsigned int)index)<<(block_offset_bits));
+                    write_cache_to_main(temp_address,mycache[myind].block);
+                }
+                // read_cache_to_main()
+                read_cache_from_main(address,myind);
+                mycache[myind].dirty=1;
+                for (int i = 0; i < bytes; i++)
+                {
+                    mycache[myind].block[BO+i]= (char)((value >> (i * 8)) & 0xFF);
+                }
+
+            }
+        }
+        else{
+            read_cache_from_main(address,myind);
+            mycache[myind].dirty=1;
+            for (int i = 0; i < bytes; i++)
+            {
+                mycache[myind].block[BO+i]= (char)((value >> (i * 8)) & 0xFF);
+            }
+        }
+        //update LRU
+        for(int k=index*ways;k<(index+1)*ways;k++){
+            if(LRU[k]>LRU[myind]){
+                LRU[k]--;
+            }
+        }
+        LRU[myind]=ways-1;
     }
 
 }

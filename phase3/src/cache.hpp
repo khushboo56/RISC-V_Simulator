@@ -17,6 +17,7 @@ class Cache{
     int index_bits;
     int block_offset_bits;
     int tag_bits;
+    vector<int> LRU;
     struct cache_entry * mycache;
     void createCache();
     unsigned long long int readCache(unsigned int address, int bytes);
@@ -25,4 +26,5 @@ class Cache{
     void write_cache_to_main(unsigned int address,char * block);
     void read_cache_from_main(unsigned int address,int index);
     void writeCache(unsigned int address, unsigned long long int value, int bytes);
+    long long int findLRUind(unsigned int address, int bytes);
 };
