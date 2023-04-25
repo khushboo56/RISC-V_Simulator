@@ -41,6 +41,15 @@ void Cache::createCache(){
         this->LRU.clear();
         this->LRU.resize(pow(2,index_bits)*ways,0);
     }
+    if(mapping_choice==2){
+        this->LFU.clear();
+        this->LFU.resize(pow(2,index_bits)*ways,0);
+    }
+    if(mapping_choice==3){
+        this->FIFO.clear();
+        queue<int> q; //to be checked later
+        this->FIFO.resize(pow(2,index_bits),q);
+    }
     for(int i=0;i<pow(2,index_bits)*ways;i++){
         mycache[i].block=temp+(i*cache_block_size);
         mycache[i].dirty=0;
@@ -100,6 +109,44 @@ long long int Cache::findLRUind(unsigned int address, int bytes){
     }
     return -1;
 }
+
+long long int Cache:: findLFUind(unsigned int address, int bytes)
+{
+    string str_add=dec2bin(address);
+    string s_tag=str_add.substr(0,tag_bits);
+    string s_index=str_add.substr(tag_bits,index_bits);
+    string s_BO=str_add.substr(tag_bits+index_bits,block_offset_bits);
+    unsigned long long int tag=unsgn_binaryToDecimal(s_tag);
+    unsigned long long int index=unsgn_binaryToDecimal(s_index);
+    unsigned long long int BO=unsgn_binaryToDecimal(s_BO);
+    index=index*ways;
+    for(int k=index;k<index+ways;k++)
+    {
+        if( (mycache[k].valid==1) && (mycache[k].tag)==tag){
+            //hit
+            return k;
+        }
+    }
+    //miss
+    for(int k=index;k<index+ways;k++){
+        if(mycache[k].valid==0){
+            return k;  
+        }
+    }
+    int mini=LFU[index];
+    int ind=-1;
+    for(int k=index;k<index+ways;k++){
+        //if we want to replace
+        mini=min(mini,LFU[k]);
+        if(mini==LFU[k])
+        {
+            ind=k;
+        }
+    }
+    return ind;
+}
+
+
 unsigned long long int Cache::readCache(unsigned int address, int bytes){
     string str_add=dec2bin(address);
     string s_tag=str_add.substr(0,tag_bits);
@@ -109,7 +156,7 @@ unsigned long long int Cache::readCache(unsigned int address, int bytes){
     unsigned long long int index=unsgn_binaryToDecimal(s_index);
     unsigned long long int BO=unsgn_binaryToDecimal(s_BO);
     // printf("block_offset:%llu\n",BO);
-    if(mapping_choice==0){
+    if(mapping_choice==0){ //direct map
         if(mycache[index].valid==1){
             if(mycache[index].tag==tag){
                 //hit
@@ -154,11 +201,41 @@ unsigned long long int Cache::readCache(unsigned int address, int bytes){
 
 
     }
-    else if(mapping_choice==1){
-        long long int myind=findLRUind(address,bytes);
+    else if(mapping_choice==1){ // set associative
+        int replacementpolicy=-1;
+        printf("Enter 0 for LRU, 1 for LFU and 2 for FIFO: ");
+        scanf("%d",replacementpolicy);
+        long long int myind;
+        int flag=1;
+        if(replacementpolicy==0)
+        {
+            //LRU
+            myind=findLRUind(address,bytes);
+            if(myind<0){
+                cout<<"some Error in LRU ~##"<<endl;
+                flag=0;
+            }
+        }
+        else if(replacementpolicy==1)
+        {
+            //LFU
+            myind=findLFUind(address,bytes);
+            if(myind<0){
+                cout<<"some Error in LFU ~##"<<endl;
+                flag=0;
+            }
+        }
+        else if(replacementpolicy==2)
+        {
+            //FIFO
+        }
+        else {
+            printf("****No replacemennt policy taken****");
+        }
         unsigned long long int temp_value = 0;
-        if(myind<0){
-            cout<<"some Error in LRU ~##"<<endl;
+        if(flag==0)
+        {
+            printf("error occured");
         }
         else if(mycache[myind].valid==1){
             if(mycache[myind].tag==tag){
@@ -191,13 +268,28 @@ unsigned long long int Cache::readCache(unsigned int address, int bytes){
                 temp_value = (((unsigned long long int)((unsigned char)(mycache[myind].block)[BO+i])) << (i * 8)) | (temp_value);
             }
         }
-        //update LRU
-        for(int k=index*ways;k<(index+1)*ways;k++){
-            if(LRU[k]>LRU[myind]){
-                LRU[k]--;
+        if(replacementpolicy==0)
+        {
+            //update LRU
+            for(int k=index*ways;k<(index+1)*ways;k++){
+                if(LRU[k]>LRU[myind]){
+                    LRU[k]--;
+                }
             }
+            LRU[myind]=ways-1;
         }
-        LRU[myind]=ways-1;
+        else if(replacementpolicy==1)
+        {
+            //update LFU
+            LFU[myind]++;            
+        }
+        else if(replacementpolicy==2)
+        {
+            //FIFO
+        }
+        else {
+            printf("****No replacemennt policy taken****");
+        }
         return temp_value;
     }
     else{
@@ -213,7 +305,7 @@ void Cache::writeCache(unsigned int address, unsigned long long int value, int b
     unsigned long long int tag=unsgn_binaryToDecimal(s_tag);
     unsigned long long int index=unsgn_binaryToDecimal(s_index);
     unsigned long long int BO=unsgn_binaryToDecimal(s_BO);
-    if(mapping_choice==0){
+    if(mapping_choice==0){ //direct map
         if(mycache[index].valid==1){
             if(mycache[index].tag==tag){
                 //hit
@@ -250,10 +342,41 @@ void Cache::writeCache(unsigned int address, unsigned long long int value, int b
         }
 
     }
-    else if(mapping_choice==1){
-        long long int myind=findLRUind(address,bytes);
-        if(myind<0){
-            cout<<"some Error in LRU ~##"<<endl;
+    else if(mapping_choice==1){ //set associative
+        int replacementpolicy=-1;
+        printf("Enter 0 for LRU, 1 for LFU and 2 for FIFO: ");
+        scanf("%d",replacementpolicy);
+        long long int myind;
+        int flag=1;
+        if(replacementpolicy==0)
+        {
+            //LRU
+            myind=findLRUind(address,bytes);
+            if(myind<0){
+                cout<<"some Error in LRU ~##"<<endl;
+                flag=0;
+            }
+        }
+        else if(replacementpolicy==1)
+        {
+            //LFU
+            myind=findLFUind(address,bytes);
+            if(myind<0){
+                cout<<"some Error in LFU ~##"<<endl;
+                flag=0;
+            }
+        }
+        else if(replacementpolicy==2)
+        {
+            //FIFO
+        }
+        else {
+            printf("****No replacemennt policy taken****");
+        }
+        unsigned long long int temp_value = 0;
+        if(flag==0)
+        {
+            printf("error occured");
         }
         else if(mycache[myind].valid==1){
             if(mycache[myind].tag==tag){
@@ -289,13 +412,28 @@ void Cache::writeCache(unsigned int address, unsigned long long int value, int b
                 mycache[myind].block[BO+i]= (char)((value >> (i * 8)) & 0xFF);
             }
         }
-        //update LRU
-        for(int k=index*ways;k<(index+1)*ways;k++){
-            if(LRU[k]>LRU[myind]){
-                LRU[k]--;
+        if(replacementpolicy==0)
+        {
+            //update LRU
+            for(int k=index*ways;k<(index+1)*ways;k++){
+                if(LRU[k]>LRU[myind]){
+                    LRU[k]--;
+                }
             }
+            LRU[myind]=ways-1;
         }
-        LRU[myind]=ways-1;
+        else if(replacementpolicy==1)
+        {
+            //update LFU
+            LFU[myind]++;            
+        }
+        else if(replacementpolicy==2)
+        {
+            //FIFO
+        }
+        else {
+            printf("****No replacemennt policy taken****");
+        }
     }
 
 }
