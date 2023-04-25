@@ -1,5 +1,8 @@
 # RISCV-simulator
  These project is divided in three phases.
+
+
+
  Phase-I   Single Cycle Execution.
 
 
@@ -28,29 +31,14 @@
  5. Write back: It will make the necessary changes in the register file, PC and call for next instruction as PC will be updated after this step.
 
 
- Team members:
-
-
- Chavda jayrajsinh : 2021CSB1078
-
-
- Khushboo gupta : 2021CSB1105
-
-
- Nikhil garg : 2021CSB1114
-
-
- Priyanshu kumar : 2021CSB1125
 
 
  Phase-II  Pipelined Execution.
 
 
 
-
- We have to give the following command in terminal to run our code: 
- g++ main.cpp alu_unit.cpp control_unit.cpp dec2bin.cpp global_variables.cpp immediate.cpp memory_read_write_funcs.cpp myRISCVSim.cpp registerfile.cpp -o output.out
-
+We have to give the following command in terminal to run our code: 
+ g++ main.cpp alu_unit.cpp BTB_operations.cpp  control_unit.cpp forwarding_unit.cpp dec2bin.cpp global_variables.cpp immediate.cpp memory_read_write_funcs.cpp myRISCVSim.cpp registerfile.cpp -o output.out
 
  Then we should give the following command after the above command:
  ./output.out <filename.mc>
@@ -89,6 +77,47 @@ For the second step, there is infinite loop, which simulates all the instruction
 
 
 
+Phase - 3 - Appending a cache module to phase 2 
+
+
+We have to give the following command in terminal to run our code: 
+ g++ main.cpp alu_unit.cpp BTB_operations.cpp cache.cpp  control_unit.cpp forwarding_unit.cpp dec2bin.cpp global_variables.cpp immediate.cpp memory_read_write_funcs.cpp myRISCVSim.cpp registerfile.cpp -o output.out
+
+
+ Then we should give the following command after the above command:
+ ./output.out <filename.mc>
+ where in brackets we have to write name of the file which contain our assembly code
+
+
+ To exit the RISCV simulator we have used opcode="1111111"
+
+In this phase, we have  created the instruction (I$) and data (D$) cache modules. Instead of directly reading from .mc file (or some other temporary structure), we have first read the instructions or  read/write data from these cache modules. 
+
+More details of our Cache model: 
+1. We have first instantiated two caches, one is working as Instruction cache (I$) and another is working as Data cache (D$). And, all the requests from Fetch stage of our pipeline is handled by I$. Like wise, requests from Memory stage is handled by D$. 
+2. Here , we have given a provision to the user to specify input configurations for cache. 
+3. Input parameters (for each cache): Cache size, Cache block size, Direct mapped (DM)/Full Assoc (FA)/ Set Assoc(SA), Number of ways for SA. 
+4. For FA and SA caches, LRU/FIFO/Random/LFU replacement policies as input. 
+5. Hit time of I$ and D$, Miss penalty in cycles. Default values are set as 1 cycle and 20 cycles respectively. 
+6. Finally , other than outputs of registers and other phase-2 outputs , we will show outputs related to cache . These are as:
+7. Output: Number of accesses, number of hits, number of misses, Number of cold, conflict, capacity misses. Total number of memory stalls , CPI. 
+8. At the end of simulation, two sets of stats will be printed - one for I$ and another for D$. 
+
+
+
+Team members:
+
+
+ Chavda jayrajsinh : 2021CSB1078
+
+
+ Khushboo gupta : 2021CSB1105
+
+
+ Nikhil garg : 2021CSB1114
+
+
+ Priyanshu kumar : 2021CSB1125
 
 
 
@@ -124,7 +153,11 @@ For the second step, there is infinite loop, which simulates all the instruction
 
 
 
- Phase-III Memory Hierarchy
 
 
- Yet to be done
+
+
+
+
+ 
+
