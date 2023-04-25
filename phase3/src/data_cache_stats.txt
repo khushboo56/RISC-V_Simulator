@@ -1,8 +1,8 @@
-Number of access: 410
-Number of hits: 344
-Number of miss: 2
-Number of cold miss: 2
+Number of access: 2708
+Number of hits: 2631
+Number of miss: 13
+Number of cold miss: 13
 Number of conflict and capacity miss: 0
-Number of memory stalls: 384
-CPI with perfect cache: -1210765835
-CPI without perfect cache: -749374251
+Number of memory stalls: 2891
+CPI with perfect cache: 1.105903
+CPI without perfect cache: 1.351820

@@ -1,0 +1,11 @@
+Total number of cycles: 13001
+Total instruction executed: 11756
+CPI: 1.105903
+Total number of data transfers: 2644
+Total number of ALU instruction executed: 6532
+Total number of control instructions executed: 2577
+Total number of stalls/bubbles in the pipeline: 1240
+Total number of control hazards: 620
+Total number of branch misprediction: 620
+Total number of stalls due to data hazards: 0
+Total number of stalls due to control hazards: 1240
