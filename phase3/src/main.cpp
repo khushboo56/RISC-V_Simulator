@@ -118,9 +118,9 @@ int main(int argc, char** argv) {
     fprintf(idata,"Number of cold miss: %d\n",n_coldi);
     fprintf(idata,"Number of conflict and capacity miss: %d\n",n_conflicti);
     fprintf(idata,"Number of memory stalls: %d\n",n_hitsi*(hittime)+n_missi*misstime);
-    fprintf(idata,"CPI with perfect cache: %d\n",CPI);
+    fprintf(idata,"CPI with perfect cache: %lf\n",CPI);
     double withoutCPI=((double)n_cycles+(n_hitsi*(hittime)+n_missi*misstime))/((double)n_instruct);
-    fprintf(idata,"CPI without perfect cache: %d\n",withoutCPI);
+    fprintf(idata,"CPI without perfect cache: %lf\n",withoutCPI);
 
     fprintf(ddata,"Number of access: %d\n",n_accessd);
     fprintf(ddata,"Number of hits: %d\n",n_hitsd);
@@ -128,9 +128,9 @@ int main(int argc, char** argv) {
     fprintf(ddata,"Number of cold miss: %d\n",n_coldd);
     fprintf(ddata,"Number of conflict and capacity miss: %d\n",n_conflictd);
     fprintf(ddata,"Number of memory stalls: %d\n",n_hitsd*(hittime)+n_missd*misstime);
-    fprintf(ddata,"CPI with perfect cache: %d\n",CPI);
+    fprintf(ddata,"CPI with perfect cache: %lf\n",CPI);
     withoutCPI=((double)n_cycles+(n_hitsd*(hittime)+n_missd*misstime))/((double)n_instruct);
-    fprintf(ddata,"CPI without perfect cache: %d\n",withoutCPI);
+    fprintf(ddata,"CPI without perfect cache: %lf\n",withoutCPI);
 
 
 
