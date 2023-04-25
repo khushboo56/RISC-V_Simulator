@@ -11,3 +11,4 @@ int alu_unit(string aluSignal);
 void memory_write(unsigned int address,unsigned long long int value,int bytes);
 unsigned long long int memory_read(unsigned int address,int bytes);
 unsigned int BTB_hash(unsigned int k);
+void brut_memory_write(unsigned int address, unsigned long long int value, int bytes);

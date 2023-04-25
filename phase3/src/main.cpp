@@ -30,7 +30,10 @@ int main(int argc, char** argv) {
   char* prog_mem_file;
   bool knob1=false; 
   bool knob2=false;
-  
+  // if( freopen( "output.txt", "w", stdout ))
+  // {
+  //   printf( "this should go to the output file\n" );
+  // }
   if(argc < 2) {
     printf("Incorrect number of arguments. Please invoke the simulator \n\t./myRISCVSim <input mem file> \n");
     exit(1);

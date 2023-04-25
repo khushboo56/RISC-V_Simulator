@@ -1,5 +1,4 @@
 #include "builtin_funcs.hpp"
-#include "global_variables.hpp"
 struct cache_entry{
     int valid;
     int dirty;
@@ -21,7 +20,9 @@ class Cache{
     struct cache_entry * mycache;
     void createCache();
     unsigned long long int readCache(unsigned int address, int bytes);
-    Cache(int cache_size,int block_size,int ways,int block_replacement_policy,int hit_time,int miss_time);
-    Cache(int cache_size,int block_size,int ways,int block_replacement_policy);
-    void write_cache_to_main(unsigned int address,char * block,int block_size);
+    void setCache(int cache_size,int block_size,int ways,int block_replacement_policy,int hit_time,int miss_time);
+    void setCache(int cache_size,int block_size,int ways,int block_replacement_policy);
+    void write_cache_to_main(unsigned int address,char * block);
+    void read_cache_from_main(unsigned int address,int index);
+    void writeCache(unsigned int address, unsigned long long int value, int bytes);
 };

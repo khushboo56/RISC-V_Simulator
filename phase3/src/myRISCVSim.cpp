@@ -21,6 +21,7 @@ Date:
 #include "registerfile.hpp"
 #include "control_unit.hpp"
 #include "forwarding_unit.hpp"
+#include "cache.hpp"
 #endif
 #include "global_variables.hpp"
 using namespace std;
@@ -33,6 +34,7 @@ void run_riscvsim(bool knob2) {
     int i;
     string run_mode="STEP";
     string input;
+    
     cout<<"type STEP or RUN"<<endl;
     cin>>input;
     if(input=="RUN"){
@@ -136,18 +138,22 @@ void reset_proc()
 //load_program_memory reads the input memory, and pupulates the instruction 
 // memory
 void load_program_memory(char *file_name) {
+    instruction_cache.setCache(1024,64,1,0);
+    instruction_cache.createCache();
+    data_cache.setCache(1024,64,1,0);
+    data_cache.createCache();
     FILE *fp;
-  unsigned int address, instruction;
-  fp = fopen(file_name, "r");
-  if(fp == NULL) {
-    printf("Error opening input mem file\n");
-    exit(1);
-  }
-  while(fscanf(fp, "%x %x", &address, &instruction) != EOF) {
-    memory_write((unsigned int) address,(unsigned long long int)instruction,4);
-    // printf("%x %u\n",address,mem[(unsigned int) address]);//  
-  }
-  fclose(fp);
+    unsigned int address, instruction;
+    fp = fopen(file_name, "r");
+    if(fp == NULL) {
+        printf("Error opening input mem file\n");
+        exit(1);
+    }
+    while(fscanf(fp, "%x %x", &address, &instruction) != EOF) {
+        brut_memory_write((unsigned int) address,(unsigned long long int)instruction,4);
+        // printf("%x %u\n",address,mem[(unsigned int) address]);//  
+    }
+    fclose(fp);
 
 }
 

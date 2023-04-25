@@ -6,6 +6,7 @@
 #include "registerfile.hpp"
 #include "control_unit.hpp"
 #include "forwarding_unit.hpp"
+#include "cache.hpp"
 #endif
 unsigned int PC=0;
 unsigned int nextPC=0;
@@ -16,8 +17,9 @@ bool EXIT=false;
 unordered_map<unsigned int,unsigned int> mem;
 Control_unit without_pipeline_control_unit;
 RegisterFile registerFile;
-
 Forwarding_unit forwarding_unit;
+Cache instruction_cache;
+Cache data_cache; 
 
 // Control_unit mycontrol_unit;
 

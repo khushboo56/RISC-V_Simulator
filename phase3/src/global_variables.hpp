@@ -5,6 +5,7 @@
 #include "registerfile.hpp"
 #include "control_unit.hpp"
 #include "forwarding_unit.hpp"
+#include "cache.hpp"
 #endif
 #define BTB_SIZE 1024
 extern unsigned int PC;
@@ -16,6 +17,8 @@ extern unordered_map<unsigned int,unsigned int> mem;
 extern RegisterFile registerFile;
 extern Control_unit without_pipeline_control_unit;
 extern Forwarding_unit forwarding_unit;
+extern Cache instruction_cache;
+extern Cache data_cache; 
 
 struct BTB_entry{
     unsigned int address;

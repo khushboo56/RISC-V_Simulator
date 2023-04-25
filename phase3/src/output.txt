@@ -1,0 +1,2 @@
+this should go to the output file
+PRESS 0 for non_pipeline, PRESS 1 for pipeline: 
